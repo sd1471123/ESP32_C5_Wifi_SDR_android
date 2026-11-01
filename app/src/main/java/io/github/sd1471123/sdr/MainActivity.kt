@@ -654,12 +654,13 @@ class MainActivity : Activity() {
             }
             main.post {
                 endUpdate()
-                status(getString(R.string.update_installing))
-            }
-            try {
-                updater.install(apk)
-            } catch (t: Throwable) {
-                main.post { notify(getString(R.string.update_install_failed, t.message.orEmpty())) }
+                // The installer has to be started from the visible activity, not a worker thread.
+                try {
+                    updater.install(apk)
+                    status(getString(R.string.update_installing))
+                } catch (t: Throwable) {
+                    notify(getString(R.string.update_install_failed, t.message.orEmpty()))
+                }
             }
         }.start()
     }

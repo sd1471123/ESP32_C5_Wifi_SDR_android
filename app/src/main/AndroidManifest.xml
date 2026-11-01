@@ -45,10 +45,12 @@
                 android:resource="@xml/device_filter" />
         </activity>
 
-        <!-- PackageInstaller callback; only reached through our own explicit PendingIntent -->
-        <receiver
-            android:name=".InstallReceiver"
-            android:exported="false" />
+        <!-- hands the downloaded APK to the system installer as a content:// URI -->
+        <provider
+            android:name=".ApkProvider"
+            android:authorities="${applicationId}.apk"
+            android:exported="false"
+            android:grantUriPermissions="true" />
     </application>
 
 </manifest>

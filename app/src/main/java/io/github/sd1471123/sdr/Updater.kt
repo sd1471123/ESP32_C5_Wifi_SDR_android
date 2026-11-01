@@ -1,9 +1,7 @@
 package io.github.sd1471123.sdr
 
 import android.app.Activity
-import android.app.PendingIntent
 import android.content.Intent
-import android.content.pm.PackageInstaller
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -127,29 +125,17 @@ class Updater(private val activity: Activity) {
     }
 
     /**
-     * Hands the APK to PackageInstaller instead of a file:// URI, which Android 7+ refuses
-     * across apps — this keeps the app free of the androidx FileProvider dependency.
+     * Opens the system installer on [apk]. A `file://` URI is refused from Android 7 on, and a
+     * [PackageInstaller] session leaves the confirmation screen to a result broadcast, which
+     * Android 12 no longer lets a background receiver launch — so the file is exposed through
+     * [ApkProvider] and the installer is started from the visible activity instead.
      */
     fun install(apk: File) {
-        val installer = activity.packageManager.packageInstaller
-        val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
-        val sessionId = installer.createSession(params)
-        installer.openSession(sessionId).use { session ->
-            apk.inputStream().use { input ->
-                session.openWrite("base.apk", 0, apk.length()).use { out ->
-                    input.copyTo(out)
-                    session.fsync(out)
-                }
-            }
-            val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            val callback = PendingIntent.getBroadcast(
-                activity,
-                sessionId,
-                Intent(activity, InstallReceiver::class.java),
-                flags
-            )
-            session.commit(callback.intentSender)
-        }
+        val uri = Uri.parse("content://${activity.packageName}.apk/${apk.name}")
+        val intent = Intent(Intent.ACTION_VIEW)
+            .setDataAndType(uri, "application/vnd.android.package-archive")
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        activity.startActivity(intent)
     }
 
     // ---- helpers ----------------------------------------------------------

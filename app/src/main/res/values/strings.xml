@@ -72,7 +72,6 @@
     <string name="update_download_failed">Download failed: %1$s</string>
     <string name="update_installing">Opening the installer…</string>
     <string name="update_install_failed">Install failed: %1$s</string>
-    <string name="update_installed">Update installed</string>
     <string name="update_need_permission">Allow C5-SDR to install unknown apps, then try again</string>
     <string name="update_no_apk">v%1$s is available but has no APK attached</string>
     <string name="update_no_release">No published release on GitHub yet</string>
