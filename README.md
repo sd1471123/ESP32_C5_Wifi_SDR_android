@@ -1,5 +1,7 @@
 # C5-SDR — ESP32-C5 Wi-Fi SDR for Android
 
+**English** · [简体中文](README.zh-CN.md)
+
 An Android front-end for the ESP32-C5 Wi-Fi SDR firmware used by
 [ESP32_C5_Wifi_spectrum_analyzer](https://github.com/sd1471123/ESP32_C5_Wifi_spectrum_analyzer).
 It talks the same line protocol as `espsdr.py` over USB (OTG), and draws the spectrum and
@@ -47,7 +49,7 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 - Connect the board's **"USB" port (native USB Serial/JTAG)** to the phone with an OTG adapter.
 - **Power**: the radio draws current spikes at start-up and a phone's OTG port often cannot
   supply them — the board may brown out and reboot. Use a powered OTG hub / Y-cable if the
-  connection drops right after "已连接".
+  connection drops right after "connected".
 - The UART port (CH343, VID `0x1A86`) is accepted by the device filter too, but this MVP has no
   baud-rate handling beyond the CDC line coding, so native USB is the supported path.
 
