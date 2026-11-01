@@ -1,6 +1,7 @@
 package io.github.sd1471123.sdr
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -25,6 +26,7 @@ import android.widget.EditText
 import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
 import java.io.BufferedOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -65,10 +67,12 @@ class MainActivity : Activity() {
     private lateinit var btnRecord: Button
     private lateinit var txtRecord: TextView
     private lateinit var txtBattery: TextView
+    private lateinit var btnUpdate: Button
 
     private val main = Handler(Looper.getMainLooper())
     private var dev: Espsdr? = null
     private var engine: SdrEngine? = null
+    private var updateBusy = false
 
     private var currentMode = Mode.LIVE
     private var currentBand = Bands.GHZ24
@@ -149,6 +153,7 @@ class MainActivity : Activity() {
         btnRecord = findViewById(R.id.btnRecord)
         txtRecord = findViewById(R.id.txtRecord)
         txtBattery = findViewById(R.id.txtBattery)
+        btnUpdate = findViewById(R.id.btnUpdate)
         btnRecord.isEnabled = false
 
         usb = getSystemService(Context.USB_SERVICE) as UsbManager
@@ -165,6 +170,7 @@ class MainActivity : Activity() {
         findViewById<Button>(R.id.btnPrevPreset).setOnClickListener { stepPreset(-1) }
         findViewById<Button>(R.id.btnNextPreset).setOnClickListener { stepPreset(1) }
         findViewById<TextView>(R.id.txtAuthor).setOnClickListener { openProjectPage() }
+        btnUpdate.setOnClickListener { checkForUpdates() }
         spectrum.onTune = { freq -> tuneTo(freq) }
         seekGain.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) {
@@ -577,6 +583,97 @@ class MainActivity : Activity() {
         } catch (_: Exception) {
             status(GITHUB_URL)
         }
+    }
+
+    // ---- self-update ------------------------------------------------------
+
+    /** Asks GitHub for the newest release, then either reports "up to date" or offers it. */
+    private fun checkForUpdates() {
+        if (updateBusy) return
+        val updater = Updater(this)
+        updateBusy = true
+        btnUpdate.isEnabled = false
+        btnUpdate.setText("…")
+        notify(getString(R.string.update_checking))
+        Thread {
+            val info = try {
+                updater.fetchLatest()
+            } catch (t: Throwable) {
+                main.post {
+                    endUpdate()
+                    notify(getString(R.string.update_failed, t.message.orEmpty()))
+                }
+                return@Thread
+            }
+            main.post {
+                endUpdate()
+                val local = updater.currentVersion()
+                when {
+                    info == null -> notify(getString(R.string.update_no_release))
+                    !Updater.isNewer(info.version, local) ->
+                        notify(getString(R.string.update_latest, local))
+                    info.apkUrl == null -> notify(getString(R.string.update_no_apk, info.version))
+                    else -> askToInstall(updater, info, local)
+                }
+            }
+        }.start()
+    }
+
+    private fun askToInstall(updater: Updater, info: UpdateInfo, local: String) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.update_available_title)
+            .setMessage(getString(R.string.update_available_msg, info.version, local))
+            .setPositiveButton(R.string.update_download) { _, _ -> downloadAndInstall(updater, info) }
+            .setNegativeButton(R.string.update_later, null)
+            .show()
+    }
+
+    /**
+     * "Install unknown apps" is a per-app permission; without it the installer session will be
+     * rejected, so send the user to the settings page first and let them tap again.
+     */
+    private fun downloadAndInstall(updater: Updater, info: UpdateInfo) {
+        if (!updater.canInstall()) {
+            status(getString(R.string.update_need_permission))
+            updater.requestInstallPermission()
+            return
+        }
+        updateBusy = true
+        btnUpdate.isEnabled = false
+        Thread {
+            val apk = try {
+                updater.download(info) { pct ->
+                    main.post { status(getString(R.string.update_downloading, pct)) }
+                }
+            } catch (t: Throwable) {
+                main.post {
+                    endUpdate()
+                    notify(getString(R.string.update_download_failed, t.message.orEmpty()))
+                }
+                return@Thread
+            }
+            main.post {
+                endUpdate()
+                status(getString(R.string.update_installing))
+            }
+            try {
+                updater.install(apk)
+            } catch (t: Throwable) {
+                main.post { notify(getString(R.string.update_install_failed, t.message.orEmpty())) }
+            }
+        }.start()
+    }
+
+    private fun endUpdate() {
+        updateBusy = false
+        btnUpdate.isEnabled = true
+        btnUpdate.setText(R.string.update_icon)
+    }
+
+    /** Results go to a toast as well: the status line is overwritten by the live spectrum. */
+    private fun notify(text: String) {
+        status(text)
+        Toast.makeText(this, text, Toast.LENGTH_LONG).show()
     }
 
     private fun closeRadio() {

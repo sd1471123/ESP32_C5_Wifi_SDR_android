@@ -73,6 +73,20 @@
             android:layout_toStartOf="@id/btnConnect"
             android:text="@string/record" />
 
+        <!-- self-update: always visible, unlike the bottom of the scrollable rail -->
+        <Button
+            android:id="@+id/btnUpdate"
+            style="@style/SdrButton.Compact"
+            android:layout_width="30dp"
+            android:layout_height="24dp"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="6dp"
+            android:layout_toStartOf="@id/btnRecord"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp"
+            android:text="@string/update_icon"
+            android:textSize="13sp" />
+
         <TextView
             android:id="@+id/txtRecord"
             style="@style/SdrStatus"
@@ -80,7 +94,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_marginEnd="6dp"
-            android:layout_toStartOf="@id/btnRecord"
+            android:layout_toStartOf="@id/btnUpdate"
             android:ellipsize="end"
             android:maxLines="1" />
 

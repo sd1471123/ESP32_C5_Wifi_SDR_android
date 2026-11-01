@@ -23,6 +23,21 @@ object Bands {
         if (freqMhz < 3000f) Math.round((freqMhz - 2407f) / 5f) else Math.round((freqMhz - 5000f) / 5f)
 
     /**
+     * 20 MHz channel whose block contains [freqMhz] (nearest centre within ±10 MHz), or null
+     * when the frequency sits between channels — used for the tap marker readout.
+     */
+    fun channelAt(band: String, freqMhz: Float): Int? {
+        val nearest = channels20(band).minByOrNull { Math.abs(freqMhz - it) } ?: return null
+        return if (Math.abs(freqMhz - nearest) <= 10f) channelNumber(nearest.toFloat()) else null
+    }
+
+    /** True when [freqMhz] lies inside the band described by [band]. */
+    fun inBand(band: String, freqMhz: Float): Boolean {
+        val r = range(band)
+        return freqMhz >= r[0] && freqMhz <= r[1]
+    }
+
+    /**
      * Channel presets: 20 MHz channels everywhere, plus the 40/80 MHz groupings that a
      * Wi-Fi access point actually uses on 5 GHz.
      */

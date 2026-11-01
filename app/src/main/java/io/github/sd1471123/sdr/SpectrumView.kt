@@ -101,6 +101,10 @@ class SpectrumView @JvmOverloads constructor(
         color = Color.rgb(110, 240, 176)
         textSize = sp(12f)
     }
+    private val markerSub = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.rgb(140, 220, 190)
+        textSize = sp(10f)
+    }
     private val hintTitle = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.rgb(150, 160, 175)
         textSize = sp(14f)
@@ -406,8 +410,26 @@ class SpectrumView @JvmOverloads constructor(
         canvas.drawLine(x, top.toFloat(), x, (top + hgt).toFloat(), markerPaint)
         val db = levelAt(m)
         val text = if (db.isNaN()) "%.1f MHz".format(m) else "%.1f MHz  %.1f dBFS".format(m, db)
+        val baseY = (top + hgt).toFloat() - 6f
         val right = w - markerLabel.measureText(text) - 4f
-        canvas.drawText(text, if (x + 6f > right) right else x + 6f, (top + hgt) - 6f, markerLabel)
+        canvas.drawText(text, if (x + 6f > right) right else x + 6f, baseY, markerLabel)
+
+        // Channel / band the tapped frequency belongs to (or why it belongs to none).
+        if (band.isNotEmpty()) {
+            val chan = Bands.channelAt(band, m)
+            val sub = when {
+                !Bands.inBand(band, m) -> context.getString(R.string.marker_out_of_band, band)
+                chan != null -> context.getString(R.string.marker_channel, chan, band)
+                else -> context.getString(R.string.marker_no_channel, band)
+            }
+            val subRight = w - markerSub.measureText(sub) - 4f
+            canvas.drawText(
+                sub,
+                if (x + 6f > subRight) subRight else x + 6f,
+                baseY - markerLabel.textSize - 2f,
+                markerSub
+            )
+        }
     }
 
     private fun levelAt(freq: Float): Float {

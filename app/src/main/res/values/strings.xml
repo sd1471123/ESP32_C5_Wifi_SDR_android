@@ -53,6 +53,30 @@
     <string name="status_connect_failed">Connection failed: %1$s</string>
     <string name="status_disconnected">Disconnected</string>
 
+    <!-- tap marker on the spectrum -->
+    <string name="marker_channel">ch%1$d · %2$s · 20 MHz</string>
+    <string name="marker_no_channel">no channel in %1$s</string>
+    <string name="marker_out_of_band">outside %1$s</string>
+
+    <!-- update check -->
+    <string name="update_check">Check for updates</string>
+    <string name="update_icon">⟳</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_latest">You are on the latest version (v%1$s)</string>
+    <string name="update_failed">Update check failed: %1$s</string>
+    <string name="update_available_title">Update available</string>
+    <string name="update_available_msg">Latest v%1$s, current v%2$s.\n\nDownload and install it now?</string>
+    <string name="update_download">Download &amp; install</string>
+    <string name="update_later">Later</string>
+    <string name="update_downloading">Downloading update… %1$d%%</string>
+    <string name="update_download_failed">Download failed: %1$s</string>
+    <string name="update_installing">Opening the installer…</string>
+    <string name="update_install_failed">Install failed: %1$s</string>
+    <string name="update_installed">Update installed</string>
+    <string name="update_need_permission">Allow C5-SDR to install unknown apps, then try again</string>
+    <string name="update_no_apk">v%1$s is available but has no APK attached</string>
+    <string name="update_no_release">No published release on GitHub yet</string>
+
     <!-- spectrum summary -->
     <string name="busiest">Busiest: %1$s</string>
     <string name="busiest_item">ch%1$d %2$d MHz +%3$s dB</string>
