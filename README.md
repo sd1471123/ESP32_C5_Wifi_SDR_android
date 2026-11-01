@@ -78,7 +78,7 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 | Level marker (tap), tune (double tap), drag to pan, pinch to zoom | ✅ |
 | I/Q recording to a file picked with the system document picker (`.cfile`, signed 8-bit, ±127 = full scale) | ✅ |
 | Chinese / English UI, defaulting to the system language (everything else falls back to English), switchable in the rail | ✅ |
-| Immersive full screen (edge-to-edge, display cutout kept clear) with a centred clock + battery readout | ✅ |
+| Immersive full screen (edge-to-edge, display cutout kept clear) with the clock + battery next to the title | ✅ |
 | Channel presets sorted by channel number, 40/80 MHz groupings interleaved with the 20 MHz ones | ✅ |
 
 ## Not implemented yet
