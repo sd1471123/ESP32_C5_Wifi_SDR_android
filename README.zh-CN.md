@@ -1,6 +1,6 @@
 # C5-SDR — ESP32-C5 Wi-Fi SDR Android 客户端
 
-[English](README.md) · **简体中文**
+[English](README.md) · **简体中文** · [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 本项目是 [ESP32_C5_Wifi_spectrum_analyzer](https://github.com/sd1471123/ESP32_C5_Wifi_spectrum_analyzer)
 所用 ESP32-C5 Wi-Fi SDR 固件的 Android 前端。它通过 USB（OTG）与 `espsdr.py` 使用同一套行协议通信，
@@ -114,3 +114,18 @@ tools/make_icons.ps1                     由 icon.png 重新生成全部启动�
 ```
 
 编译检查：`gradle :app:assembleDebug` 在 AGP 8.5.2 / Kotlin 1.9.24（SDK 34）下通过。
+
+## 许可证
+
+GPL-3.0，详见 [LICENSE](LICENSE)。
+
+Copyright (C) 2026 arara &lt;https://github.com/sd1471123/&gt;
+
+本程序是自由软件：你可以依据自由软件基金会发布的 GNU 通用公共许可证（GNU GPL）第 3 版，
+或（任选）之后的版本，重新分发和/或修改它。
+
+本程序的分发是希望它有用，但**不提供任何担保**，甚至不提供适销性或特定用途适用性的默示担保。
+详见 GNU 通用公共许可证。
+
+> 采用 GPL-3.0 的含意：任何基于本项目的衍生作品（包括修改后重新分发）都必须同样以 GPL-3.0 开源，
+> 并保留原始版权声明。

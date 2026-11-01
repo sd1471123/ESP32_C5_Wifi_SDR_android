@@ -1,6 +1,6 @@
 # C5-SDR — ESP32-C5 Wi-Fi SDR for Android
 
-**English** · [简体中文](README.zh-CN.md)
+**English** · [简体中文](README.zh-CN.md) · [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
 An Android front-end for the ESP32-C5 Wi-Fi SDR firmware used by
 [ESP32_C5_Wifi_spectrum_analyzer](https://github.com/sd1471123/ESP32_C5_Wifi_spectrum_analyzer).
@@ -116,3 +116,17 @@ tools/make_icons.ps1                     regenerates every launcher icon from ic
 ```
 
 Build check: `gradle :app:assembleDebug` passes with AGP 8.5.2 / Kotlin 1.9.24 (SDK 34).
+
+## License
+
+GPL-3.0 — see [LICENSE](LICENSE).
+
+Copyright (C) 2026 arara &lt;https://github.com/sd1471123/&gt;
+
+This program is free software: you can redistribute it and/or modify it under the terms of the
+GNU General Public License as published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
