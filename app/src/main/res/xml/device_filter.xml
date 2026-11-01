@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only boards whose USB port really is the ESP32-C5 native USB Serial/JTAG.
+     0x303A = Espressif. 0x1A86 = CH343 (UART port), which also works at 2 Mbaud. -->
+<resources>
+    <usb-device vendor-id="12346" />
+    <usb-device vendor-id="6790" />
+</resources>

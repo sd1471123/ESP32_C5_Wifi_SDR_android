@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="AppTheme" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:colorPrimary">@color/accent</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:textColorPrimary">@color/text</item>
+        <item name="android:textColorSecondary">@color/text_dim</item>
+        <item name="android:textColorHint">@color/text_dim</item>
+        <item name="android:colorControlActivated">@color/accent</item>
+    </style>
+
+    <!-- small caption above a control -->
+    <style name="SdrLabel">
+        <item name="android:textColor">@color/text_dim</item>
+        <item name="android:textSize">8sp</item>
+        <item name="android:letterSpacing">0.08</item>
+    </style>
+
+    <style name="SdrTitle">
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.04</item>
+    </style>
+
+    <style name="SdrStatus">
+        <item name="android:textColor">@color/text_dim</item>
+        <item name="android:textSize">9sp</item>
+        <item name="android:lineSpacingExtra">1dp</item>
+    </style>
+
+    <!-- clock and battery in the middle of the top bar -->
+    <style name="SdrClock">
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.03</item>
+    </style>
+
+    <style name="SdrValue">
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textSize">11sp</item>
+    </style>
+
+    <style name="SdrSpinner" parent="@android:style/Widget.Material.Spinner">
+        <item name="android:background">@drawable/bg_spinner</item>
+        <item name="android:paddingStart">7dp</item>
+        <item name="android:paddingEnd">18dp</item>
+        <item name="android:minHeight">32dp</item>
+        <item name="android:textSize">8sp</item>
+        <item name="android:popupBackground">@color/panel</item>
+    </style>
+
+    <style name="SdrButton" parent="@android:style/Widget.Material.Button">
+        <item name="android:background">@drawable/bg_button</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">32dp</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+
+    <style name="SdrButton.Accent">
+        <item name="android:background">@drawable/bg_button_accent</item>
+        <item name="android:textColor">@color/accent</item>
+    </style>
+
+    <!-- low-profile variant for the top bar, keeps the strip slim -->
+    <style name="SdrButton.Compact">
+        <item name="android:minHeight">24dp</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:paddingStart">9dp</item>
+        <item name="android:paddingEnd">9dp</item>
+    </style>
+
+    <style name="SdrButton.Accent.Compact">
+        <item name="android:minHeight">24dp</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:paddingStart">9dp</item>
+        <item name="android:paddingEnd">9dp</item>
+    </style>
+
+    <style name="SdrEdit" parent="@android:style/Widget.Material.EditText">
+        <item name="android:background">@drawable/bg_input</item>
+        <item name="android:textColor">@color/text</item>
+        <item name="android:textColorHint">@color/text_dim</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:minHeight">32dp</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+    </style>
+
+    <style name="SdrSeek" parent="@android:style/Widget.Material.SeekBar">
+        <item name="android:progressTint">@color/accent</item>
+        <item name="android:thumbTint">@color/accent</item>
+        <item name="android:progressBackgroundTint">@color/input_stroke</item>
+        <item name="android:paddingStart">0dp</item>
+        <item name="android:paddingEnd">0dp</item>
+    </style>
+
+</resources>

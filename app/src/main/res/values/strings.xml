@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Default resources: English. Any system language without a translation falls back to this. -->
+<resources>
+    <string name="app_name">C5-SDR</string>
+
+    <!-- left panel -->
+    <string name="mode">Mode</string>
+    <string name="preset">Preset</string>
+    <string name="freq">Freq</string>
+    <string name="freq_hint">Centre MHz</string>
+    <string name="rate">Rate</string>
+    <string name="fft">FFT</string>
+    <string name="bandwidth">BW</string>
+    <string name="lo_offset">LO</string>
+    <string name="gain">Gain</string>
+    <string name="language">Lang</string>
+    <string name="author">by arara\ngithub.com/sd1471123</string>
+    <string name="bw_max">Max</string>
+    <string name="tune">Tune</string>
+
+    <!-- top bar -->
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="record">Record</string>
+    <string name="stop_record">Stop</string>
+    <string name="status_idle">Not connected: plug the board\'s USB port into the phone (OTG), then tap Connect.</string>
+
+    <!-- status line -->
+    <string name="status_usb_denied">USB permission denied</string>
+    <string name="status_usb_attached">USB device detected — tap Connect to start</string>
+    <string name="status_capture_lost">Capture stopped: %1$s</string>
+    <string name="status_mode">Mode: %1$s</string>
+    <string name="status_rate">Sample rate: %1$s</string>
+    <string name="status_fft">FFT: %1$d</string>
+    <string name="status_bw">Analogue bandwidth: %1$s</string>
+    <string name="status_lo">LO offset: %1$s</string>
+    <string name="status_preset">Preset: %1$s   %2$d MHz</string>
+    <string name="status_tuned">Tuned to %1$d MHz</string>
+    <string name="status_need_device">Connect a device before recording I/Q</string>
+    <string name="status_no_picker">Cannot open the file picker: %1$s</string>
+    <string name="status_rec_start">Recording to: %1$s</string>
+    <string name="status_write_fail">Cannot write: %1$s</string>
+    <string name="status_rec_saved">Saved: %1$d frames / %2$d pts / %3$d kB</string>
+    <string name="status_rec_done">Recording finished: %1$d I/Q samples</string>
+    <string name="status_rec_stopped">Recording stopped: %1$s</string>
+    <string name="status_rec_live">Recording: %1$d frames / %2$d pts / %3$d kB</string>
+    <string name="status_no_board">No ESP32-C5 found: connect the board\'s USB port with an OTG cable</string>
+    <string name="status_wait_permission">Waiting for USB permission…</string>
+    <string name="status_connecting">Connecting… %1$04X:%2$04X</string>
+    <string name="status_connected">Connected: %1$s</string>
+    <string name="status_connect_failed">Connection failed: %1$s</string>
+    <string name="status_disconnected">Disconnected</string>
+
+    <!-- spectrum summary -->
+    <string name="busiest">Busiest: %1$s</string>
+    <string name="busiest_item">ch%1$d %2$d MHz +%3$s dB</string>
+    <string name="top_detected">Best detection: ch%1$d %2$s%%</string>
+    <string name="clip_pct">Clip %1$.1f%%</string>
+
+    <!-- engine / view -->
+    <string name="engine_info">%1$.1f fps   RMS %2$.1f dBFS   %3$d pts/%4$.0f MS/s</string>
+    <string name="sweep_done">Sweep %1$.2f s   %2$d steps   floor %3$.1f dBFS</string>
+    <string name="sweep_progress">Sweeping %1$d/%2$d   %3$.1f s</string>
+    <string name="hint_title">C5-SDR · spectrum / full-band sweep</string>
+    <string name="hint_body">Plug the board\'s USB port into the phone (OTG), then tap Connect at the top right.</string>
+    <string name="time_domain">Time %1$.1f … %2$.1f dBFS</string>
+
+    <string-array name="modes">
+        <item>Live 2.4G</item>
+        <item>Live 5G</item>
+        <item>Sweep 2.4G</item>
+        <item>Sweep 5G</item>
+    </string-array>
+
+    <string-array name="bandwidths">
+        <item>@string/bw_max</item>
+        <item>11 MHz</item>
+        <item>16 MHz</item>
+        <item>20 MHz</item>
+        <item>24 MHz</item>
+        <item>30 MHz</item>
+        <item>40 MHz</item>
+        <item>48 MHz</item>
+    </string-array>
+</resources>

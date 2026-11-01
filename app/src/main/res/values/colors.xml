@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg">#0A0C0F</color>
+    <color name="panel">#12151A</color>
+    <color name="panel_stroke">#212630</color>
+    <color name="input">#0E1116</color>
+    <color name="input_stroke">#252B34</color>
+    <color name="text">#E7EAF0</color>
+    <color name="text_dim">#7F8896</color>
+    <color name="accent">#00C8FF</color>
+    <color name="accent_deep">#0C2E38</color>
+    <color name="accent_stroke">#1B6C84</color>
+    <color name="danger">#FF6B6B</color>
+    <color name="launcher_bg">#28A9FE</color>
+</resources>

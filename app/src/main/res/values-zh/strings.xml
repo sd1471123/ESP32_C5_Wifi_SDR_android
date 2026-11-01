@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 中文资源：系统语言为中文时自动使用，也可在 App 内切换。 -->
+<resources>
+    <string name="app_name">C5-SDR</string>
+
+    <!-- 左侧选项面板 -->
+    <string name="mode">模式</string>
+    <string name="preset">预设</string>
+    <string name="freq">频率</string>
+    <string name="freq_hint">中心频率 MHz</string>
+    <string name="rate">采样率</string>
+    <string name="fft">FFT</string>
+    <string name="bandwidth">带宽</string>
+    <string name="lo_offset">LO</string>
+    <string name="gain">增益</string>
+    <string name="language">语言</string>
+    <string name="author">作者 arara\ngithub.com/sd1471123</string>
+    <string name="bw_max">最大</string>
+    <string name="tune">调谐</string>
+
+    <!-- 顶部栏 -->
+    <string name="connect">连接设备</string>
+    <string name="disconnect">断开连接</string>
+    <string name="record">录制 I/Q</string>
+    <string name="stop_record">停止录制</string>
+    <string name="status_idle">未连接：把板子的 USB 口接到手机（OTG），然后点“连接设备”</string>
+
+    <!-- 状态栏 -->
+    <string name="status_usb_denied">USB 权限被拒绝</string>
+    <string name="status_usb_attached">检测到 USB 设备，点“连接”开始采集</string>
+    <string name="status_capture_lost">采集中断：%1$s</string>
+    <string name="status_mode">模式：%1$s</string>
+    <string name="status_rate">采样率：%1$s</string>
+    <string name="status_fft">FFT：%1$d</string>
+    <string name="status_bw">模拟带宽：%1$s</string>
+    <string name="status_lo">LO 偏移：%1$s</string>
+    <string name="status_preset">预设：%1$s   %2$d MHz</string>
+    <string name="status_tuned">调谐到 %1$d MHz</string>
+    <string name="status_need_device">先连接设备，再录制 I/Q</string>
+    <string name="status_no_picker">无法打开文件选择器：%1$s</string>
+    <string name="status_rec_start">开始录制：%1$s</string>
+    <string name="status_write_fail">无法写入：%1$s</string>
+    <string name="status_rec_saved">已保存：%1$d 帧 / %2$d 点 / %3$d kB</string>
+    <string name="status_rec_done">录制结束：%1$d 个 I/Q 采样点</string>
+    <string name="status_rec_stopped">录制已停止：%1$s</string>
+    <string name="status_rec_live">录制中：%1$d 帧 / %2$d 点 / %3$d kB</string>
+    <string name="status_no_board">找不到 ESP32-C5：请用 OTG 线把板子的 USB 口接到手机</string>
+    <string name="status_wait_permission">等待 USB 权限…</string>
+    <string name="status_connecting">连接中… %1$04X:%2$04X</string>
+    <string name="status_connected">已连接：%1$s</string>
+    <string name="status_connect_failed">连接失败：%1$s</string>
+    <string name="status_disconnected">已断开</string>
+
+    <!-- 频谱摘要 -->
+    <string name="busiest">最忙：%1$s</string>
+    <string name="busiest_item">ch%1$d %2$dMHz +%3$s dB</string>
+    <string name="top_detected">检出率最高：ch%1$d %2$s%%</string>
+    <string name="clip_pct">削顶 %1$.1f%%</string>
+
+    <!-- 引擎 / 视图 -->
+    <string name="engine_info">%1$.1f 帧/秒   RMS %2$.1f dBFS   %3$d 点/%4$.0f MS/s</string>
+    <string name="sweep_done">扫描 %1$.2f s   %2$d 步   底噪 %3$.1f dBFS</string>
+    <string name="sweep_progress">扫描中 %1$d/%2$d   %3$.1f s</string>
+    <string name="hint_title">C5-SDR · 频谱 / 全频段扫描</string>
+    <string name="hint_body">把板子的 USB 口接到手机（OTG），然后点右上角「连接设备」</string>
+    <string name="time_domain">时域 %1$.1f … %2$.1f dBFS</string>
+
+    <string-array name="modes">
+        <item>实时 2.4G</item>
+        <item>实时 5G</item>
+        <item>扫描 2.4G</item>
+        <item>扫描 5G</item>
+    </string-array>
+
+    <string-array name="bandwidths">
+        <item>@string/bw_max</item>
+        <item>11 MHz</item>
+        <item>16 MHz</item>
+        <item>20 MHz</item>
+        <item>24 MHz</item>
+        <item>30 MHz</item>
+        <item>40 MHz</item>
+        <item>48 MHz</item>
+    </string-array>
+</resources>
