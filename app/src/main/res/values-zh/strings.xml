@@ -6,6 +6,8 @@
     <!-- 左侧选项面板 -->
     <string name="mode">模式</string>
     <string name="preset">预设</string>
+    <string name="channel_prev">◀</string>
+    <string name="channel_next">▶</string>
     <string name="freq">频率</string>
     <string name="freq_hint">中心频率 MHz</string>
     <string name="rate">采样率</string>

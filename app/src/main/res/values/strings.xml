@@ -6,6 +6,8 @@
     <!-- left panel -->
     <string name="mode">Mode</string>
     <string name="preset">Preset</string>
+    <string name="channel_prev">◀</string>
+    <string name="channel_next">▶</string>
     <string name="freq">Freq</string>
     <string name="freq_hint">Centre MHz</string>
     <string name="rate">Rate</string>

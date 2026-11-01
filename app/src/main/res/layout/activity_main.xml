@@ -170,6 +170,31 @@
                         android:layout_weight="1" />
                 </LinearLayout>
 
+                <!-- previous / next channel, aligned under the preset box -->
+                <LinearLayout
+                    android:id="@+id/rowPresetNav"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:gravity="end"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnPrevPreset"
+                        style="@style/SdrButton.Compact"
+                        android:layout_width="40dp"
+                        android:layout_height="24dp"
+                        android:text="@string/channel_prev" />
+
+                    <Button
+                        android:id="@+id/btnNextPreset"
+                        style="@style/SdrButton.Compact"
+                        android:layout_width="40dp"
+                        android:layout_height="24dp"
+                        android:layout_marginStart="4dp"
+                        android:text="@string/channel_next" />
+                </LinearLayout>
+
                 <!-- centre frequency: live modes only -->
                 <LinearLayout
                     android:id="@+id/rowFreq"

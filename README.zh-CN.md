@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="icon.png" width="120" alt="C5-SDR 应用图标">
+</p>
+
 # C5-SDR — ESP32-C5 Wi-Fi SDR Android 客户端
 
 [English](README.md) · **简体中文** · [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
@@ -7,6 +11,17 @@
 频谱图和瀑布图全部用 `Canvas` 原生绘制——不依赖 Python、Qt 或任何绘图库。
 
 作者：**arara** · <https://github.com/sd1471123/>
+
+## 关联项目
+
+| 组成 | 仓库 | 说明 |
+| --- | --- | --- |
+| **固件** | [ESPARGOS/esp-sdr](https://github.com/ESPARGOS/esp-sdr) | ESP-SDR 固件，把 ESP32 系列变成低占空比的软件无线电。**ESP32-C5 开发板必须先刷这个固件**，App 才能和它通信 |
+| **桌面端** | [sd1471123/ESP32_C5_Wifi_spectrum_analyzer](https://github.com/sd1471123/ESP32_C5_Wifi_spectrum_analyzer) | 同一固件的 Python/Qt 桌面客户端，也是本项目的协议、频段规划和 DSP 参考实现 |
+| **Android 端** | 本仓库 | 手机侧界面：USB-OTG 采集、频谱 + 瀑布、信道分析、I/Q 录制 |
+
+三者共用同一套行协议（桌面端的 `espsdr.py`），因此已经在桌面端跑通的板子，接上手机无需任何改动——
+同一份固件、同一套命令、同样的数值。
 
 ## 编译
 
@@ -44,7 +59,8 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 
 ## 硬件
 
-- 已烧录 ESP-SDR 固件的 ESP32-C5 开发板（见桌面项目里的 `flash_c5.py`）。
+- 已烧录 [ESP-SDR](https://github.com/ESPARGOS/esp-sdr) 固件的 ESP32-C5 开发板。
+  刷写方式：桌面项目的 `flash_c5.py`，或者直接用 `idf.py flash`。
 - 用 OTG 转接头把板子的 **"USB" 口（原生 USB Serial/JTAG）** 接到手机。
 - **供电**：射频启动瞬间电流尖峰较大，手机 OTG 口常常供不上，板子会欠压重启。
   如果刚显示"已连接"就掉线，请改用带独立供电的 OTG HUB 或 Y 型线。
@@ -67,7 +83,8 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 | 采样率 80…4 MS/s、FFT 256…2048、模拟带宽 11–48 MHz、LO 偏移 | ✅ |
 | 频段扫描：2.4 GHz 7 步 / 5 GHz 39 步，按 ±10–20 MHz 窗口拼接 | ✅ |
 | 扫描显示在尚未扫到的频点保留上一轮结果；峰值保持按 2 dB/轮衰减 | ✅ |
-| 信道预设：全部 20 MHz 信道，外加 5 GHz AP 常用的 40/80 MHz 组合 | ✅ |
+| 信道预设带完整中心频率（如 `ch6 2437·20M`）：全部 20 MHz 信道，外加 5 GHz AP 常用的 40/80 MHz 组合 | ✅ |
+| 预设框下方的 ◀ ▶ 按钮可切换到上一个 / 下一个频道，两端循环 | ✅ |
 | 每 20 MHz 信道的占用度条 + "最忙信道"读数 | ✅ |
 | 每信道检出率（一轮扫描中高出底噪 6 dB 的占比） | ✅ |
 | 实时模式下的时域条（每帧 FFT 的块功率） | ✅ |

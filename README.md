@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="icon.png" width="120" alt="C5-SDR app icon">
+</p>
+
 # C5-SDR — ESP32-C5 Wi-Fi SDR for Android
 
 **English** · [简体中文](README.zh-CN.md) · [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
@@ -8,6 +12,17 @@ It talks the same line protocol as `espsdr.py` over USB (OTG), and draws the spe
 waterfall natively with `Canvas` — no Python, no Qt, no plotting library.
 
 Author: **arara** · <https://github.com/sd1471123/>
+
+## Related projects
+
+| Part | Repository | What it is |
+| --- | --- | --- |
+| **Firmware** | [ESPARGOS/esp-sdr](https://github.com/ESPARGOS/esp-sdr) | ESP-SDR firmware that turns the ESP32 family into a low-duty-cycle SDR. **The ESP32-C5 board must be flashed with this before the app can talk to it.** |
+| **Desktop host** | [sd1471123/ESP32_C5_Wifi_spectrum_analyzer](https://github.com/sd1471123/ESP32_C5_Wifi_spectrum_analyzer) | Python/Qt desktop client for the same firmware — the reference implementation of the protocol, band plans and DSP this app mirrors |
+| **Android client** | this repository | Phone-side UI: USB-OTG capture, spectrum + waterfall, channel analysis, I/Q recording |
+
+All three speak one line protocol (`espsdr.py` on the desktop side), so a board that already
+works with the desktop app works here unchanged — same firmware, same commands, same numbers.
 
 ## Build
 
@@ -45,7 +60,8 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 
 ## Hardware
 
-- ESP32-C5 board flashed with the ESP-SDR firmware (see the desktop project's `flash_c5.py`).
+- ESP32-C5 board flashed with the [ESP-SDR](https://github.com/ESPARGOS/esp-sdr) firmware.
+  The desktop project's `flash_c5.py` is one convenient way to flash it; `idf.py flash` works too.
 - Connect the board's **"USB" port (native USB Serial/JTAG)** to the phone with an OTG adapter.
 - **Power**: the radio draws current spikes at start-up and a phone's OTG port often cannot
   supply them — the board may brown out and reboot. Use a powered OTG hub / Y-cable if the
@@ -69,7 +85,8 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 | Sample rate 80…4 MS/s, FFT 256…2048, analog bandwidth 11–48 MHz, LO offset | ✅ |
 | Band sweep: 2.4 GHz 7 steps / 5 GHz 39 steps, stitched with the ±10–20 MHz window | ✅ |
 | Sweep display holds the previous pass in not-yet-scanned bins; peak hold persists (2 dB/sweep decay) | ✅ |
-| Channel presets: every 20 MHz channel, plus the 40/80 MHz groupings used by 5 GHz APs | ✅ |
+| Channel presets with the full centre frequency (`ch6 2437·20M`): every 20 MHz channel, plus the 40/80 MHz groupings used by 5 GHz APs | ✅ |
+| ◀ ▶ buttons under the preset box step to the previous / next channel, wrapping at both ends | ✅ |
 | Per-20 MHz-channel activity strip + "busiest channel" readout | ✅ |
 | Detection rate per channel (% of finished sweeps 6 dB above the noise floor) | ✅ |
 | Time-domain strip in live mode (block power per FFT frame) | ✅ |

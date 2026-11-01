@@ -162,6 +162,8 @@ class MainActivity : Activity() {
         btnConnect.setOnClickListener { if (engine == null) connect() else disconnect() }
         findViewById<Button>(R.id.btnTune).setOnClickListener { applyFreq() }
         btnRecord.setOnClickListener { toggleRecord() }
+        findViewById<Button>(R.id.btnPrevPreset).setOnClickListener { stepPreset(-1) }
+        findViewById<Button>(R.id.btnNextPreset).setOnClickListener { stepPreset(1) }
         findViewById<TextView>(R.id.txtAuthor).setOnClickListener { openProjectPage() }
         spectrum.onTune = { freq -> tuneTo(freq) }
         seekGain.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -330,6 +332,7 @@ class MainActivity : Activity() {
     private fun applyModeVisibility() {
         val live = currentMode == Mode.LIVE
         findViewById<View>(R.id.rowPreset).visibility = if (live) View.VISIBLE else View.GONE
+        findViewById<View>(R.id.rowPresetNav).visibility = if (live) View.VISIBLE else View.GONE
         findViewById<View>(R.id.rowFreq).visibility = if (live) View.VISIBLE else View.GONE
         findViewById<View>(R.id.rowLo).visibility = if (live) View.VISIBLE else View.GONE
     }
@@ -354,6 +357,15 @@ class MainActivity : Activity() {
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+    }
+
+    /** Arrow buttons: step one entry up/down the preset list, wrapping at both ends. */
+    private fun stepPreset(delta: Int) {
+        if (presets.isEmpty()) return
+        val sp = findViewById<Spinner>(R.id.spPreset)
+        val n = presets.size
+        val next = ((sp.selectedItemPosition + delta) % n + n) % n
+        sp.setSelection(next)
     }
 
     private fun applyPreset(p: Preset) {

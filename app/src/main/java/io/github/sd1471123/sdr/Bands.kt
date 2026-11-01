@@ -30,16 +30,16 @@ object Bands {
         val out = ArrayList<Preset>()
         for (fc in channels20(band)) {
             val ch = channelNumber(fc.toFloat())
-            out.add(Preset("ch$ch·20M", fc, 20, ch))
+            out.add(Preset("ch$ch $fc·20M", fc, 20, ch))
         }
         if (band == GHZ5) {
             for ((first, width) in listOf(36 to 40, 52 to 40, 100 to 40, 116 to 40, 132 to 40, 149 to 40)) {
                 val fc = 5000 + first * 5 + width / 2 - 10
-                out.add(Preset("ch$first+·${width}M", fc, width, first))
+                out.add(Preset("ch$first+ $fc·${width}M", fc, width, first))
             }
             for ((first, width) in listOf(36 to 80, 52 to 80, 100 to 80, 116 to 80, 132 to 80, 149 to 80)) {
                 val fc = 5000 + first * 5 + width / 2 - 10
-                out.add(Preset("ch$first+·${width}M", fc, width, first))
+                out.add(Preset("ch$first+ $fc·${width}M", fc, width, first))
             }
         }
         // Channel number ascending; for the same channel the narrow option comes first.
