@@ -55,6 +55,14 @@ class SpectrumView @JvmOverloads constructor(
     private var dbSpan = 70f
     private val wfRows = 160
 
+    /**
+     * Minimum interval between waterfall rows: 0 pushes every frame, otherwise the newest row
+     * repeats until the interval elapses. Matters when frames arrive faster than the waterfall
+     * can be read (the on-chip SPEC stream tops 100 rows/s).
+     */
+    var wfRowMs = 0f
+    private var lastWfPush = 0L
+
     /** True: axis follows the noise floor. False: user-picked floor + span from the rail. */
     var autoScale = true
     var manualFloor = -100f
@@ -654,7 +662,9 @@ class SpectrumView @JvmOverloads constructor(
         val a = avg
         val viewSpan = viewFhi - viewFlo
         val dataSpan = dataFhi - dataFlo
-        if (a != null && a.isNotEmpty() && viewSpan > 0f && dataSpan > 0f) {
+        val now = System.currentTimeMillis()
+        if (a != null && a.isNotEmpty() && viewSpan > 0f && dataSpan > 0f && now - lastWfPush >= wfRowMs) {
+            lastWfPush = now
             System.arraycopy(pix, w, pix, 0, (wfRows - 1) * w)
             val off = (wfRows - 1) * w
             for (x in 0 until w) {

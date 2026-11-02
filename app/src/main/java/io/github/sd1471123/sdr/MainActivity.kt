@@ -390,6 +390,16 @@ class MainActivity : Activity() {
             }
         }
 
+        // waterfall scroll speed; the SPEC stream tops 100 rows/s, unreadable at full rate
+        val wfMs = floatArrayOf(0f, 33f, 83f, 250f)
+        spinner(
+            R.id.spWf,
+            arrayOf(
+                getString(R.string.wf_max), getString(R.string.wf_30),
+                getString(R.string.wf_12), getString(R.string.wf_4)
+            )
+        ).onPick { pos -> spectrum.wfRowMs = wfMs[pos] }
+
         findViewById<Button>(R.id.btnGpio).setOnClickListener { showGpioDialog() }
 
         rebuildPresets()
@@ -717,6 +727,7 @@ class MainActivity : Activity() {
             try {
                 val d = Espsdr(usb, device)
                 d.open()
+                d.upgradeBaud()      // lifts a UART bridge to 2 MBaud; a no-op on native USB
                 val e = SdrEngine(d, frameListener, this@MainActivity)
                 e.mode = mode
                 e.band = band
@@ -731,7 +742,12 @@ class MainActivity : Activity() {
                     btnConnect.setText(R.string.disconnect)
                     btnRecord.isEnabled = true
                     btnGpio.isEnabled = true
-                    val info = if (d.buildDate.isEmpty()) d.info else "${d.info} · ${d.buildDate}"
+                    val link = when (d.transport) {
+                        "USB" -> " · USB"
+                        "UART" -> " · UART ${d.uartBaud / 1000} kBd"
+                        else -> ""
+                    }
+                    val info = (if (d.buildDate.isEmpty()) d.info else "${d.info} · ${d.buildDate}") + link
                     status(getString(R.string.status_connected, info))
                 }
             } catch (t: Throwable) {

@@ -39,6 +39,7 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
     private var conn: UsbDeviceConnection? = null
     private var epIn: UsbEndpoint? = null
     private var epOut: UsbEndpoint? = null
+    private var ctrlId: Int = 0
     private val rx = ByteArray(1 shl 16)
     private var rxPos = 0
     private var rxLen = 0
@@ -52,6 +53,18 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
     var caps: String = ""
         private set
 
+    /** "USB" behind the native Serial/JTAG, "UART" behind a bridge, null when unknown. */
+    var transport: String? = null
+        private set
+
+    /** The UART link's rate when [transport] is "UART" (0 otherwise). */
+    var uartBaud: Int = 0
+        private set
+
+    /** Line coding the link is currently opened with; 0 when the transport ignores it. */
+    var lineBaud: Int = 0
+        private set
+
     var maxSamples: Int = 16380
         private set
 
@@ -62,6 +75,53 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
     val isOpen: Boolean get() = conn != null
 
     fun open() {
+        usbOpen()
+        rxPos = 0
+        rxLen = 0
+        lineBuf.reset()
+        // A UART bridge (CH343 and friends) really runs at the line coding, so probe the two
+        // rates the firmware accepts; the native USB Serial/JTAG ignores it and always answers.
+        if (device.vendorId == 0x303a) {
+            lineBaud = 0
+        } else {
+            var ok = false
+            for (rate in intArrayOf(2000000, 1000000)) {
+                setLineCoding(rate)
+                try {
+                    resync()
+                    lineBaud = rate
+                    ok = true
+                    break
+                } catch (_: SdrError) {
+                }
+            }
+            if (!ok) {
+                close()
+                throw SdrError("${describe()}: no reply at 2 or 1 MBaud")
+            }
+        }
+        info = cmd("INFO")
+        if (!info.contains("SDR")) {
+            close()
+            throw SdrError("no ESP-SDR firmware on this device: $info")
+        }
+        info.trim().split(Regex("\\s+")).getOrNull(3)?.toIntOrNull()?.let { maxSamples = it }
+        caps = cmd("CAPS")
+        cmd("LIMITS?")
+        // pick the cleanest analogue / digital filtering when the firmware offers it
+        if (caps.contains("LPF")) tryCatch { cmd("LPF AUTO") }
+        if (caps.contains("ALPF")) tryCatch { cmd("ALPF AUTO") }
+        if (caps.contains("VERSION")) {
+            tryCatch {
+                val v = cmd("VERSION?")
+                buildDate = Regex("\"build_date\"\\s*:\\s*\"([^\"]+)\"").find(v)?.groupValues?.get(1).orEmpty()
+            }
+        }
+        negotiateTransport()
+    }
+
+    /** Opens the CDC data interface and asserts DTR (RTS must stay low or USB-JTAG resets). */
+    private fun usbOpen() {
         val c = usb.openDevice(device) ?: throw SdrError("openDevice() failed")
         epIn = null
         epOut = null
@@ -70,7 +130,7 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
         // interrupt endpoint, the data interface (class 0x0A) carries the bulk pair. The native USB
         // Serial/JTAG of the C5 is exactly like that, so never assume interface 0 has the data
         // endpoints — look for the bulk pair wherever it is.
-        var ctrlId = 0
+        ctrlId = 0
         var claimed = false
         for (i in 0 until device.interfaceCount) {
             val itf = device.getInterface(i)
@@ -100,36 +160,71 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
             throw SdrError(describe())
         }
         conn = c
-
-        // CDC-ACM line coding 115200 8N1 (ignored by the CDC/ACM firmware, but harmless)
-        c.controlTransfer(
-            0x21, 0x20, 0, ctrlId,
-            byteArrayOf(0x00, 0xC2.toByte(), 0x01, 0x00, 0x00, 0x00, 0x08), 7, 500
-        )
+        setLineCoding(115200)
         // SET_CONTROL_LINE_STATE: DTR = 1 (bit 0), RTS = 0
         c.controlTransfer(0x21, 0x22, 0x0001, ctrlId, null, 0, 500)
+    }
 
-        rxPos = 0
-        rxLen = 0
-        lineBuf.reset()
-        resync()
-        info = cmd("INFO")
-        if (!info.contains("SDR")) {
-            close()
-            throw SdrError("no ESP-SDR firmware on this device: $info")
-        }
-        info.trim().split(Regex("\\s+")).getOrNull(3)?.toIntOrNull()?.let { maxSamples = it }
-        caps = cmd("CAPS")
-        cmd("LIMITS?")
-        // pick the cleanest analogue / digital filtering when the firmware offers it
-        if (caps.contains("LPF")) tryCatch { cmd("LPF AUTO") }
-        if (caps.contains("ALPF")) tryCatch { cmd("ALPF AUTO") }
-        if (caps.contains("VERSION")) {
-            tryCatch {
-                val v = cmd("VERSION?")
-                buildDate = Regex("\"build_date\"\\s*:\\s*\"([^\"]+)\"").find(v)?.groupValues?.get(1).orEmpty()
+    /** CDC SET_LINE_CODING, little-endian dword rate + 8N1. */
+    private fun setLineCoding(baud: Int) {
+        conn?.controlTransfer(
+            0x21, 0x20, 0, ctrlId,
+            byteArrayOf(
+                baud.toByte(), (baud shr 8).toByte(), (baud shr 16).toByte(), (baud shr 24).toByte(),
+                0, 0, 8
+            ),
+            7, 500
+        )
+    }
+
+    /** Closes the USB handle without RELEASE — used mid-session by the baud switch. */
+    private fun usbClose() {
+        conn?.let { c ->
+            try {
+                c.close()
+            } catch (_: Exception) {
             }
         }
+        conn = null
+    }
+
+    /** Firmware with UARTBAUD reports which interface we are on and the UART's rate. */
+    private fun negotiateTransport() {
+        transport = null
+        uartBaud = 0
+        if (!caps.contains("UARTBAUD")) return
+        tryCatch {
+            val m = Regex("TRANSPORT (UART|USB) (\\d+)").find(cmd("TRANSPORT?")) ?: return
+            transport = m.groupValues[1]
+            uartBaud = m.groupValues[2].toInt()
+        }
+    }
+
+    /**
+     * Asks a UART-bridged device to move to 2 MBaud — the wire rate actually matters there,
+     * unlike the native USB transport. The ack can get lost in the rate switch, so the port is
+     * reopened and the transport re-negotiated; on any failure the previous rate wins back.
+     */
+    fun upgradeBaud(): Boolean {
+        if (transport != "UART" || uartBaud >= 2000000) return false
+        val oldBaud = uartBaud
+        tryCatch { write("BAUD 2000000\n") }
+        tryCatch { readLine(800) }                       // the ack, when it survives
+        for (rate in intArrayOf(2000000, oldBaud)) {
+            usbClose()
+            try {
+                usbOpen()
+                setLineCoding(rate)
+                resync()
+                negotiateTransport()
+                if (transport == "UART" && uartBaud == rate) {
+                    lineBaud = rate
+                    return rate == 2000000
+                }
+            } catch (_: SdrError) {
+            }
+        }
+        throw SdrError("device unreachable after baud change")
     }
 
     /** Best-effort optional command: a missing capability must never break the connection. */

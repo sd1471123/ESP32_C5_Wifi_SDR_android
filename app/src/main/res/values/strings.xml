@@ -116,6 +116,11 @@
     <string name="cap_row">Capture</string>
     <string name="cap_iq">IQ stream</string>
     <string name="cap_spec">On-chip spectrum</string>
+    <string name="wf_row">Waterfall</string>
+    <string name="wf_max">Every frame</string>
+    <string name="wf_30">30 rows/s</string>
+    <string name="wf_12">12 rows/s</string>
+    <string name="wf_4">4 rows/s</string>
     <string name="status_cap_on">Spectrum: on-chip SPEC (live only)</string>
     <string name="status_cap_off">Spectrum: phone FFT</string>
     <string name="status_spec_fail">On-chip spectrum unavailable, back to phone FFT: %1$s</string>

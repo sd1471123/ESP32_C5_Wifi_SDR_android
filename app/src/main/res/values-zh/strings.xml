@@ -116,6 +116,11 @@
     <string name="cap_row">采集</string>
     <string name="cap_iq">I/Q 流</string>
     <string name="cap_spec">片上频谱</string>
+    <string name="wf_row">瀑布</string>
+    <string name="wf_max">每帧</string>
+    <string name="wf_30">30 行/秒</string>
+    <string name="wf_12">12 行/秒</string>
+    <string name="wf_4">4 行/秒</string>
     <string name="status_cap_on">频谱：片上 SPEC（仅实时模式）</string>
     <string name="status_cap_off">频谱：主机 FFT</string>
     <string name="status_spec_fail">片上频谱不可用，已回退主机 FFT：%1$s</string>
