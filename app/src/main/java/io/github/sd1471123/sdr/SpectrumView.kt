@@ -410,7 +410,7 @@ class SpectrumView @JvmOverloads constructor(
         val h = height
         if (w <= 0 || h <= 0) return
 
-        val radius = 18f * resources.displayMetrics.density
+        val radius = 10f * resources.displayMetrics.density
         cornerPath.reset()
         cornerPath.addRoundRect(0f, 0f, w.toFloat(), h.toFloat(), radius, radius, Path.Direction.CW)
         canvas.save()
