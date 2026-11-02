@@ -5,6 +5,9 @@
 
     <!-- left panel -->
     <string name="mode">Mode</string>
+    <string name="source">Source</string>
+    <string name="source_usb">USB board</string>
+    <string name="source_demo">Demo</string>
     <string name="preset">Preset</string>
     <string name="channel_prev">◀</string>
     <string name="channel_next">▶</string>
@@ -50,6 +53,7 @@
     <string name="status_wait_permission">Waiting for USB permission…</string>
     <string name="status_connecting">Connecting… %1$04X:%2$04X</string>
     <string name="status_connected">Connected: %1$s</string>
+    <string name="status_demo">Demo source: synthetic Wi-Fi spectrum, no board attached</string>
     <string name="status_connect_failed">Connection failed: %1$s</string>
     <string name="status_disconnected">Disconnected</string>
 

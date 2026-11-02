@@ -18,7 +18,7 @@ class SdrEngine(
     private val listener: Listener,
     /** Activity context, so status texts follow the language picked in the UI. */
     private val context: Context,
-) : Thread("sdr-engine") {
+) : Thread("sdr-engine"), SdrSource {
 
     interface Listener {
         fun onFrame(frame: SdrFrame)
@@ -28,20 +28,20 @@ class SdrEngine(
         fun onNotice(text: String) {}
     }
 
-    @Volatile var mode: Mode = Mode.LIVE
-    @Volatile var band: String = Bands.GHZ24
-    @Volatile var centerMhz: Int = 2437
+    @Volatile override var mode: Mode = Mode.LIVE
+    @Volatile override var band: String = Bands.GHZ24
+    @Volatile override var centerMhz: Int = 2437
 
-    /** Manual PHY gain 0..80; a negative value selects the hardware AGC. */
-    @Volatile var gain: Int = 40
-    @Volatile var rateIdx: Int = 0
-    @Volatile var nfft: Int = 512
-    @Volatile var bandwidthMhz: Int = 0
-    @Volatile var loOffsetMhz: Int = 0
+    /** Manual PHY gain 0..79; a negative value selects the hardware AGC. */
+    @Volatile override var gain: Int = 40
+    @Volatile override var rateIdx: Int = 0
+    @Volatile override var nfft: Int = 512
+    @Volatile override var bandwidthMhz: Int = 0
+    @Volatile override var loOffsetMhz: Int = 0
     @Volatile var nsamp: Int = 4096
 
     /** Set to a recorder to stream every capture to disk; null stops recording. */
-    @Volatile var recorder: IqRecorder? = null
+    @Volatile override var recorder: IqRecorder? = null
 
     @Volatile private var running = true
 
@@ -51,7 +51,11 @@ class SdrEngine(
 
     private var fps = 0f
 
-    fun stopEngine() {
+    override fun startEngine() {
+        start()
+    }
+
+    override fun stopEngine() {
         running = false
     }
 

@@ -5,6 +5,9 @@
 
     <!-- 左侧选项面板 -->
     <string name="mode">模式</string>
+    <string name="source">数据源</string>
+    <string name="source_usb">USB 设备</string>
+    <string name="source_demo">演示模式</string>
     <string name="preset">预设</string>
     <string name="channel_prev">◀</string>
     <string name="channel_next">▶</string>
@@ -50,6 +53,7 @@
     <string name="status_wait_permission">等待 USB 权限…</string>
     <string name="status_connecting">连接中… %1$04X:%2$04X</string>
     <string name="status_connected">已连接：%1$s</string>
+    <string name="status_demo">演示模式：合成 Wi-Fi 频谱，无需连接板子</string>
     <string name="status_connect_failed">连接失败：%1$s</string>
     <string name="status_disconnected">已断开</string>
 

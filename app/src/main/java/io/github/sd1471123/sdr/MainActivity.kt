@@ -71,8 +71,11 @@ class MainActivity : Activity() {
 
     private val main = Handler(Looper.getMainLooper())
     private var dev: Espsdr? = null
-    private var engine: SdrEngine? = null
+    private var engine: SdrSource? = null
     private var updateBusy = false
+
+    /** True when the rail selects the synthetic source instead of the USB board. */
+    private var demoSource = false
 
     private var currentMode = Mode.LIVE
     private var currentBand = Bands.GHZ24
@@ -303,6 +306,17 @@ class MainActivity : Activity() {
             if (engine != null) status(getString(R.string.status_lo, LO_TXT[pos]))
         }
 
+        spinner(
+            R.id.spSource,
+            arrayOf(getString(R.string.source_usb), getString(R.string.source_demo))
+        ).onPick { pos ->
+            demoSource = pos == 1
+            if (engine != null) {
+                closeRadio()
+                status(getString(R.string.status_disconnected))
+            }
+        }
+
         rebuildPresets()
     }
 
@@ -522,6 +536,10 @@ class MainActivity : Activity() {
 
     // ---- connection -------------------------------------------------------
     private fun connect() {
+        if (demoSource) {
+            startDemo()
+            return
+        }
         val device = findBoard()
         if (device == null) {
             status(getString(R.string.status_no_board))
@@ -554,7 +572,7 @@ class MainActivity : Activity() {
                 e.band = band
                 e.centerMhz = freq
                 e.gain = manualGain
-                e.start()
+                e.startEngine()
                 main.post {
                     dev = d
                     engine = e
@@ -569,6 +587,28 @@ class MainActivity : Activity() {
                 }
             }
         }.start()
+    }
+
+    /**
+     * Demo source: no USB device and no permission dialog — the synthetic engine pushes frames
+     * through exactly the same listener the board does, so every control stays testable on a desk.
+     */
+    private fun startDemo() {
+        closeRadio()
+        val e = DemoEngine(frameListener, this)
+        e.mode = currentMode
+        e.band = currentBand
+        e.centerMhz = parseFreq()
+        e.gain = seekGain.progress
+        e.rateIdx = findViewById<Spinner>(R.id.spRate).selectedItemPosition
+        e.nfft = FFT_VAL[findViewById<Spinner>(R.id.spFft).selectedItemPosition]
+        e.bandwidthMhz = BW_VAL[findViewById<Spinner>(R.id.spBw).selectedItemPosition]
+        e.loOffsetMhz = LO_VAL[findViewById<Spinner>(R.id.spLo).selectedItemPosition]
+        e.startEngine()
+        engine = e
+        btnConnect.setText(R.string.disconnect)
+        btnRecord.isEnabled = true
+        status(getString(R.string.status_demo))
     }
 
     private fun disconnect() {
