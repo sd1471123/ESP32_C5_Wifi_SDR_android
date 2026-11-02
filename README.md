@@ -15,17 +15,20 @@ Author: **arara** · <https://github.com/sd1471123/>
 
 ## Screenshots
 
-Pixel-accurate UI mockups rendered 1 px = 1 dp from [`docs/ui-mockup.html`](docs/ui-mockup.html),
-which mirrors the real `activity_main.xml` layout, strings and `SpectrumView` drawing code.
+Real device screenshots (demo source — a synthetic Wi-Fi band, so they render the same
+UI the board drives):
 
-| Live 2.4 GHz | Full-band sweep, 5 GHz |
+| Live 2.4 GHz | Full-band sweep, 2.4 GHz |
 | --- | --- |
 | <img src="docs/screen-en-live.png" width="420"> | <img src="docs/screen-en-sweep.png" width="420"> |
 
-Left: live capture at ch6 — average trace (cyan), peak hold (orange), tap marker with the
-channel readout, per-frame block-power strip and the scrolling waterfall.
-Right: the 39-step 5 GHz sweep — per-20 MHz-channel activity strip (green → red), detection
-rates, "busiest channel" summary in the top bar and a clipping warning.
+Left: live capture at ch6 — average trace (cyan), peak hold (orange), dB axis readout,
+per-frame block-power strip and the scrolling waterfall.
+Right: the 2.4 GHz sweep — per-20 MHz-channel activity strip (green → red), "busiest
+channel" and "best detection" summaries in the top bar, waterfall stitching the passes.
+
+中文界面截图见 [README.zh-CN.md](README.zh-CN.md)。`docs/ui-mockup.html` is still there
+as a pixel-accurate layout mockup.
 
 ## Related projects
 
@@ -80,8 +83,9 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 - **Power**: the radio draws current spikes at start-up and a phone's OTG port often cannot
   supply them — the board may brown out and reboot. Use a powered OTG hub / Y-cable if the
   connection drops right after "connected".
-- The UART port (CH343, VID `0x1A86`) is accepted by the device filter too, but this MVP has no
-  baud-rate handling beyond the CDC line coding, so native USB is the supported path.
+- The UART port (CH343, VID `0x1A86`) works too: the app probes 2 MBaud / 1 MBaud when opening
+  and automatically upgrades UART links to 2 MBaud when the firmware supports `UARTBAUD`
+  (`TRANSPORT?`/`BAUD`). Native USB needs none of that and remains the recommended path.
 
 ## What works
 
@@ -89,14 +93,18 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 | --- | --- |
 | Landscape two-pane UI (control rail + spectrum), dark card theme, centre-frequency / LO rows hidden while sweeping | ✅ |
 | Device detection (VID `0x303A` / `0x1A86`), USB permission flow | ✅ |
-| SYNC/resync handshake, `INFO` / `CAPS` / `LIMITS?` | ✅ |
-| `CAP16` capture with CRC32 verification | ✅ |
-| Live spectrum: average + peak hold (Hann window, per-frame DC removal, fftshift) | ✅ |
-| Auto-scaled dB axis: 70 dB window anchored to the noise floor, labelled every 20 dB | ✅ |
-| Waterfall (scrolling bitmap, blue→red map on the same auto-scaled range) | ✅ |
+| SYNC/resync handshake, `INFO` / `CAPS` / `LIMITS?` / `VERSION?` build date | ✅ |
+| `CAP16` (8-bit) and `CAP20` (10-bit) captures with CRC32 verification | ✅ |
+| UART bridges (CH343): 2 MBaud / 1 MBaud probing at open, `TRANSPORT?` negotiation, automatic upgrade to 2 MBaud, transport shown in the status bar | ✅ |
+| Live spectrum: average + peak hold (Hann window, per-frame DC removal — toggleable —, fftshift) | ✅ |
+| On-chip spectrum: the chip's own `SPEC` FFT stream, decoded to the same dBFS scale (0.5 dB/code, newest-frame-wins, CRC resync) | ✅ |
+| Capture source picker: I/Q stream (phone-side FFT) / on-chip spectrum (live mode) | ✅ |
+| Auto-scaled dB axis and a manual floor + span axis, both persisted | ✅ |
+| Trace averaging (off / short / medium / high) and pause / clear | ✅ |
+| Waterfall (scrolling bitmap, blue→red map) with a row-rate limit (every frame / 30 / 12 / 4 rows/s) and a draggable spectrum/waterfall split | ✅ |
 | Center frequency input + tuning | ✅ |
-| Manual gain slider (0–80) | ✅ |
-| Sample rate 80…4 MS/s, FFT 256…2048, analog bandwidth 11–48 MHz, LO offset | ✅ |
+| Gain slider (0–79) with an AGC (`GAIN HARDWARE`) switch | ✅ |
+| Sample rate 80…4 MS/s, FFT 256…4096, analog bandwidth 11–48 MHz, LO offset, `LPF AUTO` / `ALPF AUTO` | ✅ |
 | Band sweep: 2.4 GHz 7 steps / 5 GHz 39 steps, stitched with the ±10–20 MHz window | ✅ |
 | Sweep display holds the previous pass in not-yet-scanned bins; peak hold persists (2 dB/sweep decay) | ✅ |
 | Channel presets with the full centre frequency (`ch6 2437·20M`): every 20 MHz channel, plus the 40/80 MHz groupings used by 5 GHz APs | ✅ |
@@ -105,12 +113,14 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 | Detection rate per channel (% of finished sweeps 6 dB above the noise floor) | ✅ |
 | Time-domain strip in live mode (block power per FFT frame) | ✅ |
 | Clipping statistic (share of I/Q samples at full scale) with a warning | ✅ |
-| Frame rate / RMS / noise-floor readout | ✅ |
-| Level marker (tap), tune (double tap), drag to pan, pinch to zoom | ✅ |
+| Frame rate / RMS / sample throughput (kS/s) readout | ✅ |
+| Level marker (tap), tune (double tap), drag to pan, pinch to zoom, edge-drag retune in live mode | ✅ |
+| GPIO pin panel (`GPIO?` / `GPIO <pin> Z|0|1`) for boards that expose pins | ✅ |
 | I/Q recording to a file picked with the system document picker (`.cfile`, signed 8-bit, ±127 = full scale) | ✅ |
+| Demo source: a synthetic Wi-Fi band that drives the exact same UI, for desk testing without a board | ✅ |
 | Chinese / English UI, defaulting to the system language (everything else falls back to English), switchable in the rail | ✅ |
 | Immersive full screen (edge-to-edge, display cutout kept clear) with the clock + battery next to the title | ✅ |
-| Channel presets sorted by channel number, 40/80 MHz groupings interleaved with the 20 MHz ones | ✅ |
+| In-app self-update check against this repository's releases | ✅ |
 
 ## Not implemented yet
 
@@ -127,24 +137,37 @@ Recording in **sweep mode** writes every step as it is captured, so the file is 
 - A previous client that died mid-transfer leaves the device blocked on output, so `resync()`
   drains the port and retries `SYNC <nonce>` up to 8 times, exactly like `espsdr.py`.
 - `CAP16 <n> <rate>` answers `DATA <n> <crc32> <us>` plus `n*2` bytes of signed 8-bit I/Q
-  (I, Q interleaved), CRC32 = zlib compatible. Rate indices 0–5 are 80/40/20/10/8/4 MS/s.
-- Samples are scaled by 1/128 to `[-1, 1)` full scale.
+  (I, Q interleaved), CRC32 = zlib compatible. `CAP20` packs two 10-bit words LSB-first into
+  20 bits, so the payload is `n*20/8` bytes. Rate indices 0–5 are 80/40/20/10/8/4 MS/s.
+- Samples are scaled by 1/128 (8-bit) or 1/512 (10-bit) to `[-1, 1)` full scale.
+- `SPEC 0 1 1 <det> <rate> <n>` makes the chip stream its own FFT: `SPC1` frames with a
+  28-byte header, `n` power codes (20log10(power), 1 dB per code) and a CRC32. The stream
+  runs until an empty line; `SPECEND` is glued to the last frame with no newline. Codes map
+  to the app's dBFS scale as `code/2 − 84.3` (full-scale sine = 0 dBFS), and the wire bins
+  are in natural FFT order (bin 0 = DC), so the display applies the same fftshift as `Dsp`.
+- `TRANSPORT?` answers `TRANSPORT UART <baud>` / `TRANSPORT USB 0`; `BAUD <rate>` retunes a
+  UART bridge (the ack can get lost in the switch — reopen and re-verify).
 
 ## Layout
 
 ```
 app/src/main/java/io/github/sd1471123/sdr/
-  Espsdr.kt       USB CDC + line protocol client
+  Espsdr.kt       USB CDC + line protocol client (CAP16/CAP20, SPEC stream, TRANSPORT?/BAUD, GPIO)
   Fft.kt          radix-2 FFT
-  Dsp.kt          capture -> average / peak-hold spectra, block power, clipping (mirrors sdr_core.spectra)
+  IqCodec.kt      8/10-bit I/Q unpacking (CAP20: 2 x 10 bits LSB-first per 20-bit word)
+  Dsp.kt          capture -> average / peak-hold spectra, block power, clipping
   Bands.kt        band plans, channel + 20/40/80 MHz presets, Mode enum, SdrFrame
-  SdrEngine.kt    capture thread: live + band sweep, channel activity / detection rate
+  SdrSource.kt    engine/source interface (capture mode, DC removal, capture-source flags)
+  SdrEngine.kt    capture thread: live (I/Q or on-chip spectrum) + band sweep, channel stats
+  DemoEngine.kt   synthetic source that drives the same UI without a board
   IqRecorder.kt   raw int8 I/Q writer (.cfile)
   SpectrumView.kt Canvas spectrum, time-domain strip, activity + detection bars, waterfall, marker/zoom
-  MainActivity.kt USB permission, mode/parameter spinners, recording, language, UI wiring
+  Updater.kt      in-app release check
+  MainActivity.kt USB permission, mode/parameter spinners, recording, language, GPIO panel, UI wiring
 app/src/main/res/values-zh/strings.xml   Chinese UI strings (values/ is English)
 tools/make_icons.ps1                     regenerates every launcher icon from icon.png
-docs/ui-mockup.html                      pixel-accurate UI mockup, source of the screenshots above
+tools/esp_sdr_*.ps1                      board probes: CAP16/CAP20, SPEC stream, TRANSPORT?/BAUD
+docs/ui-mockup.html                      pixel-accurate UI layout mockup
 ```
 
 Build check: `gradle :app:assembleDebug` passes with AGP 8.5.2 / Kotlin 1.9.24 (SDK 34).

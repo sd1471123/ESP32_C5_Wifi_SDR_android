@@ -14,15 +14,17 @@
 
 ## 界面预览
 
-以下界面模拟图由 [`docs/ui-mockup.html`](docs/ui-mockup.html) 按 1 px = 1 dp 渲染生成，
-布局、文案与 `SpectrumView` 的绘制逻辑均与真实 App 一致。
+以下为真机截图（数据源为演示模式——合成的 Wi-Fi 频段，渲染出的界面与板子驱动时完全一致）：
 
-| 实时 2.4 GHz | 全频段扫描 5 GHz |
+| 实时 2.4 GHz | 2.4 GHz 全频段扫描 |
 | --- | --- |
 | <img src="docs/screen-zh-live.png" width="420"> | <img src="docs/screen-zh-sweep.png" width="420"> |
 
-左图：ch6 实时采集——平均谱（青色）、峰值保持（橙色）、单击游标与信道读数、逐帧块功率条与滚动瀑布图。
-右图：5 GHz 39 步全频段扫描——每 20 MHz 信道占用度条（绿→红）、检出率条、顶栏"最忙信道"摘要与削顶告警。
+左图：ch6 实时采集——平均谱（青色）、峰值保持（橙色）、dB 轴读数、逐帧块功率条与滚动瀑布图。
+右图：2.4 GHz 扫描——每 20 MHz 信道占用度条（绿→红）、顶栏"最忙信道 / 检出率最高"摘要、多轮拼接的瀑布图。
+
+英文界面截图见 [README.md](README.md)。[`docs/ui-mockup.html`](docs/ui-mockup.html) 仍保留作
+像素级布局模拟。
 
 ## 关联项目
 
@@ -76,8 +78,9 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 - 用 OTG 转接头把板子的 **"USB" 口（原生 USB Serial/JTAG）** 接到手机。
 - **供电**：射频启动瞬间电流尖峰较大，手机 OTG 口常常供不上，板子会欠压重启。
   如果刚显示"已连接"就掉线，请改用带独立供电的 OTG HUB 或 Y 型线。
-- 设备过滤器也接受 UART 口（CH343，VID `0x1A86`），但本 MVP 除 CDC line coding 外没有处理
-  波特率，因此推荐走原生 USB。
+- 设备过滤器也接受 UART 口（CH343，VID `0x1A86`）：打开端口时会按 2 MBaud → 1 MBaud 探测，
+  且固件支持 `UARTBAUD` 时自动把 UART 链路升到 2 MBaud（`TRANSPORT?`/`BAUD`）。
+  原生 USB 无需这些处理，仍是推荐路径。
 
 ## 已实现
 
@@ -85,14 +88,18 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 | --- | --- |
 | 横屏双栏界面（控制栏 + 频谱），深色卡片主题，扫描模式下隐藏中心频率 / LO 行 | ✅ |
 | 设备识别（VID `0x303A` / `0x1A86`）、USB 权限流程 | ✅ |
-| SYNC / resync 握手，`INFO` / `CAPS` / `LIMITS?` | ✅ |
-| `CAP16` 采集并校验 CRC32 | ✅ |
-| 实时频谱：平均值 + 峰值保持（Hann 窗、逐帧去直流、fftshift） | ✅ |
-| 自动量程 dB 轴：以底噪为基准的 70 dB 窗口，每 20 dB 一条标注 | ✅ |
-| 瀑布图（滚动位图，同一自动量程上的蓝→红映射） | ✅ |
+| SYNC / resync 握手，`INFO` / `CAPS` / `LIMITS?` / `VERSION?` 构建日期 | ✅ |
+| `CAP16`（8 位）与 `CAP20`（10 位）采集并校验 CRC32 | ✅ |
+| UART 桥（CH343）：打开时按 2 MBaud / 1 MBaud 探测，`TRANSPORT?` 协商，自动升速 2 MBaud，状态栏显示传输类型 | ✅ |
+| 实时频谱：平均值 + 峰值保持（Hann 窗、逐帧去直流——可开关、fftshift） | ✅ |
+| 片上频谱：芯片自身的 `SPEC` FFT 流，解码到同一 dBFS 刻度（每码 0.5 dB、只取最新帧、CRC 重同步） | ✅ |
+| 采集源选择：I/Q 流（手机侧 FFT）/ 片上频谱（实时模式） | ✅ |
+| 自动量程 dB 轴与手动"底 + 跨度"轴，选择会被记住 | ✅ |
+| 轨迹平均（关 / 短 / 中 / 高）与暂停 / 清除 | ✅ |
+| 瀑布图（滚动位图，蓝→红映射），行速率可选（每帧 / 30 / 12 / 4 行每秒），频谱/瀑布分界可拖动 | ✅ |
 | 中心频率输入与调谐 | ✅ |
-| 手动增益滑条（0–80） | ✅ |
-| 采样率 80…4 MS/s、FFT 256…2048、模拟带宽 11–48 MHz、LO 偏移 | ✅ |
+| 增益滑条（0–79）与 AGC（`GAIN HARDWARE`）开关 | ✅ |
+| 采样率 80…4 MS/s、FFT 256…4096、模拟带宽 11–48 MHz、LO 偏移、`LPF AUTO` / `ALPF AUTO` | ✅ |
 | 频段扫描：2.4 GHz 7 步 / 5 GHz 39 步，按 ±10–20 MHz 窗口拼接 | ✅ |
 | 扫描显示在尚未扫到的频点保留上一轮结果；峰值保持按 2 dB/轮衰减 | ✅ |
 | 信道预设带完整中心频率（如 `ch6 2437·20M`）：全部 20 MHz 信道，外加 5 GHz AP 常用的 40/80 MHz 组合 | ✅ |
@@ -101,12 +108,14 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 | 每信道检出率（一轮扫描中高出底噪 6 dB 的占比） | ✅ |
 | 实时模式下的时域条（每帧 FFT 的块功率） | ✅ |
 | 削顶统计（满量程采样点占比）与告警 | ✅ |
-| 帧率 / RMS / 底噪读数 | ✅ |
-| 电平游标（单击）、调谐（双击）、拖动平移、双指缩放 | ✅ |
+| 帧率 / RMS / 采样吞吐（kS/s）读数 | ✅ |
+| 电平游标（单击）、调谐（双击）、拖动平移、双指缩放、实时模式贴边拖动换频 | ✅ |
+| GPIO 引脚面板（`GPIO?` / `GPIO <pin> Z|0|1`，固件支持时） | ✅ |
 | I/Q 录制到系统文件选择器指定的文件（`.cfile`，有符号 8 位，±127 为满量程） | ✅ |
+| 演示数据源：合成 Wi-Fi 频段驱动同一套界面，无板子也能桌面测试 | ✅ |
 | 中文 / 英文界面，默认跟随系统语言（其他语言回落英文），可在侧栏切换 | ✅ |
 | 沉浸式全屏（边到边、避开摄像头挖孔），标题旁显示时间与电量 | ✅ |
-| 信道预设按频道号升序排列，40/80 MHz 组合与 20 MHz 交错 | ✅ |
+| 应用内检查本仓库 Release 并自更新 | ✅ |
 
 ## 尚未实现
 
@@ -123,24 +132,36 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 - 上一个客户端在传输中途死掉会让设备卡在输出上，因此 `resync()` 会清空端口并最多重试 8 次
   `SYNC <nonce>`，与 `espsdr.py` 完全一致。
 - `CAP16 <n> <rate>` 返回 `DATA <n> <crc32> <us>`，随后是 `n*2` 字节有符号 8 位 I/Q（I、Q 交错），
-  CRC32 与 zlib 兼容。速率索引 0–5 对应 80/40/20/10/8/4 MS/s。
-- 采样值除以 128 缩放到 `[-1, 1)` 满量程。
+  CRC32 与 zlib 兼容。`CAP20` 把两个 10 位字按 LSB 在前打包进 20 位，负载长度为 `n*20/8` 字节。
+  速率索引 0–5 对应 80/40/20/10/8/4 MS/s。
+- 采样值除以 128（8 位）或 512（10 位）缩放到 `[-1, 1)` 满量程。
+- `SPEC 0 1 1 <det> <rate> <n>` 让芯片自己跑 FFT 并输出：`SPC1` 帧含 28 字节帧头、
+  `n` 个功率码（20log10(power)，每码 1 dB）和 CRC32。流会一直跑到收到空行；
+  `SPECEND` 紧贴最后一帧、中间没有换行。功率码换算到 app 的 dBFS 刻度为 `code/2 − 84.3`
+  （满幅正弦 = 0 dBFS），线上 bin 为自然 FFT 顺序（bin 0 = 直流），显示时做与 `Dsp` 相同的 fftshift。
+- `TRANSPORT?` 返回 `TRANSPORT UART <baud>` / `TRANSPORT USB 0`；`BAUD <rate>` 给 UART 桥切速
+  （ACK 可能在切速中丢失——重开端口并复验）。
 
 ## 目录结构
 
 ```
 app/src/main/java/io/github/sd1471123/sdr/
-  Espsdr.kt       USB CDC + 行协议客户端
+  Espsdr.kt       USB CDC + 行协议客户端（CAP16/CAP20、SPEC 流、TRANSPORT?/BAUD、GPIO）
   Fft.kt          基-2 FFT
-  Dsp.kt          采集 -> 平均 / 峰值保持频谱、块功率、削顶统计（对应 sdr_core.spectra）
+  IqCodec.kt      8/10 位 I/Q 解包（CAP20：每 20 位字按 LSB 在前装 2 x 10 位）
+  Dsp.kt          采集 -> 平均 / 峰值保持频谱、块功率、削顶统计
   Bands.kt        频段规划、信道与 20/40/80 MHz 预设、Mode 枚举、SdrFrame
-  SdrEngine.kt    采集线程：实时 + 频段扫描、信道占用度 / 检出率
+  SdrSource.kt    引擎/数据源接口（采集模式、去直流、采集源标志）
+  SdrEngine.kt    采集线程：实时（I/Q 或片上频谱）+ 频段扫描、信道统计
+  DemoEngine.kt   合成数据源，无板子时驱动同一套界面
   IqRecorder.kt   原始 int8 I/Q 写入（.cfile）
   SpectrumView.kt Canvas 频谱、时域条、占用度与检出率条、瀑布、游标/缩放
-  MainActivity.kt USB 权限、模式/参数下拉框、录制、语言切换、界面装配
+  Updater.kt      应用内 Release 检查
+  MainActivity.kt USB 权限、模式/参数下拉框、录制、语言切换、GPIO 面板、界面装配
 app/src/main/res/values-zh/strings.xml   中文文案（values/ 为英文）
 tools/make_icons.ps1                     由 icon.png 重新生成全部启动图标
-docs/ui-mockup.html                      像素级界面模拟，上面截图的源文件
+tools/esp_sdr_*.ps1                      板子探针：CAP16/CAP20、SPEC 流、TRANSPORT?/BAUD
+docs/ui-mockup.html                      像素级界面布局模拟
 ```
 
 编译检查：`gradle :app:assembleDebug` 在 AGP 8.5.2 / Kotlin 1.9.24（SDK 34）下通过。
