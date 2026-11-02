@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
@@ -50,6 +51,15 @@ class MainActivity : Activity() {
         const val LANG_EN = "en"
         const val LANG_ZH = "zh"
 
+        /** Sliders and the text field saved next to the spinner positions. */
+        const val KEY_GAIN = "gain"
+        const val KEY_AGC = "agc"
+        const val KEY_FREQ = "freq"
+
+        /** Defaults restored by "reset to defaults". */
+        const val DEFAULT_GAIN = 40
+        const val DEFAULT_FREQ = 2437
+
         /** Project page shown by the author credit. */
         const val GITHUB_URL = "https://github.com/sd1471123/"
 
@@ -76,7 +86,7 @@ class MainActivity : Activity() {
     private lateinit var btnGpio: Button
     private lateinit var chkAgc: CheckBox
 
-    /** True freezes the display; captures and recording keep running underneath. */
+    /** True stops the capture loop itself, so nothing keeps scanning behind a frozen display. */
     private var paused = false
 
     private val main = Handler(Looper.getMainLooper())
@@ -114,7 +124,9 @@ class MainActivity : Activity() {
             val recPoints = rec?.samples ?: 0
             val recKb = (rec?.bytes ?: 0L) / 1024
             main.post {
-                if (!paused) spectrum.setFrame(frame)
+                // A frozen display must stay frozen: no redraw *and* no channel-activity text.
+                if (paused) return@post
+                spectrum.setFrame(frame)
                 val line = summary(frame)
                 if (line.isNotEmpty()) status(line)
                 txtRecord.text = if (rec == null) "" else
@@ -168,6 +180,7 @@ class MainActivity : Activity() {
         txtBattery = findViewById(R.id.txtBattery)
         btnUpdate = findViewById(R.id.btnUpdate)
         btnGpio = findViewById(R.id.btnGpio)
+        chkAgc = findViewById(R.id.chkAgc)      // read before applySavedConfig() restores it
         btnRecord.isEnabled = false
         btnGpio.isEnabled = false
 
@@ -178,16 +191,16 @@ class MainActivity : Activity() {
         enterFullscreen()
 
         setupSpinners()
+        applySavedConfig()
         setupLanguage()
         btnConnect.setOnClickListener { if (engine == null) connect() else disconnect() }
         findViewById<Button>(R.id.btnTune).setOnClickListener { applyFreq() }
         btnPause = findViewById(R.id.btnPause)
-        btnPause.setOnClickListener {
-            paused = !paused
-            btnPause.setText(if (paused) R.string.resume_icon else R.string.pause_icon)
-        }
+        btnPause.setOnClickListener { setPaused(!paused) }
+        setPaused(false)                 // seeds the icon size that matches the pause glyph
+        findViewById<Button>(R.id.btnSaveCfg).setOnClickListener { saveConfig() }
+        findViewById<Button>(R.id.btnResetCfg).setOnClickListener { confirmResetConfig() }
         findViewById<Button>(R.id.btnClear).setOnClickListener { spectrum.clear() }
-        chkAgc = findViewById(R.id.chkAgc)
         chkAgc.setOnCheckedChangeListener { _, checked ->
             engine?.gain = if (checked) -1 else seekGain.progress
         }
@@ -431,6 +444,97 @@ class MainActivity : Activity() {
         val saved = getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_LANG, null)
         val tag = saved ?: Locale.getDefault().language
         return if (tag.startsWith("zh")) LANG_ZH else LANG_EN
+    }
+
+    /**
+     * Freezes the whole pipeline, not just the drawing: the capture loop stops polling frames, so
+     * the spectrum, the waterfall and the "busiest / detection" line all hold their last value.
+     */
+    private fun setPaused(on: Boolean) {
+        paused = on
+        engine?.paused = on
+        btnPause.setText(if (on) R.string.resume_icon else R.string.pause_icon)
+        // ▶ reads smaller than ❚❚ at the same size, so nudge it up to match.
+        btnPause.textSize = if (on) 13f else 10f
+    }
+
+    // ---- saved configuration ----------------------------------------------
+
+    /** Spinners written by "save config"; the language lives under its own key. */
+    private fun configSpinners(): IntArray = intArrayOf(
+        R.id.spMode, R.id.spSource, R.id.spRate, R.id.spBits, R.id.spDc, R.id.spCap,
+        R.id.spWf, R.id.spFft, R.id.spBw, R.id.spLo, R.id.spFloor, R.id.spSpan, R.id.spAvg
+    )
+
+    private fun configKey(id: Int): String = "cfg_" + resources.getResourceEntryName(id)
+
+    /** Snapshot of every control the user can tune, taken by the "save config" button. */
+    private fun saveConfig() {
+        val edit = getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+        for (id in configSpinners()) {
+            edit.putInt(configKey(id), findViewById<Spinner>(id).selectedItemPosition)
+        }
+        edit.putInt(KEY_GAIN, seekGain.progress)
+        edit.putBoolean(KEY_AGC, chkAgc.isChecked)
+        edit.putString(KEY_FREQ, parseFreq().toString())
+        edit.apply()
+        tell(getString(R.string.cfg_saved))
+    }
+
+    /** The status line is overwritten by the live summary, so confirmations also pop a toast. */
+    private fun tell(text: String) {
+        status(text)
+        Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
+    }
+
+    /** Replays the stored snapshot at start-up; when nothing is stored the defaults stay. */
+    private fun applySavedConfig() {
+        val p = getSharedPreferences(PREFS, MODE_PRIVATE)
+        val freq = p.getString(KEY_FREQ, null)?.toIntOrNull() ?: return
+        pick(R.id.spMode, p)                    // rebuilds the preset list for the saved band
+        editFreq.setText(freq.toString())
+        for (id in configSpinners()) {
+            if (id != R.id.spMode) pick(id, p)
+        }
+        seekGain.progress = p.getInt(KEY_GAIN, DEFAULT_GAIN)
+        txtGain.text = seekGain.progress.toString()     // listener is not attached yet
+        chkAgc.isChecked = p.getBoolean(KEY_AGC, false)
+        rebuildPresets()                        // align the preset with the saved centre frequency
+    }
+
+    private fun pick(id: Int, p: SharedPreferences) {
+        val pos = p.getInt(configKey(id), -1)
+        if (pos >= 0) findViewById<Spinner>(id).setSelection(pos)
+    }
+
+    private fun confirmResetConfig() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.cfg_reset_title)
+            .setMessage(R.string.cfg_reset_msg)
+            .setNegativeButton(R.string.cfg_cancel, null)
+            .setPositiveButton(R.string.cfg_reset_ok) { _, _ -> applyDefaults() }
+            .show()
+    }
+
+    /** Drops the snapshot and puts every control back to the value it boots with. */
+    private fun applyDefaults() {
+        val edit = getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+        for (id in configSpinners()) edit.remove(configKey(id))
+        edit.remove(KEY_GAIN)
+        edit.remove(KEY_AGC)
+        edit.remove(KEY_FREQ)
+        edit.apply()
+
+        findViewById<Spinner>(R.id.spMode).setSelection(0)
+        editFreq.setText(DEFAULT_FREQ.toString())
+        for (id in configSpinners()) {
+            if (id != R.id.spMode) findViewById<Spinner>(id).setSelection(0)
+        }
+        seekGain.progress = DEFAULT_GAIN
+        txtGain.text = DEFAULT_GAIN.toString()
+        chkAgc.isChecked = false
+        rebuildPresets()
+        tell(getString(R.string.cfg_reset_done))
     }
 
     /** Presets, centre frequency and LO offset only mean something in the live modes. */
@@ -747,6 +851,7 @@ class MainActivity : Activity() {
                 e.gain = manualGain
                 e.iqBits = bits
                 e.onChipSpectrum = findViewById<Spinner>(R.id.spCap).selectedItemPosition == 1
+                e.paused = paused
                 e.startEngine()
                 main.post {
                     dev = d
@@ -787,6 +892,7 @@ class MainActivity : Activity() {
         e.bandwidthMhz = BW_VAL[findViewById<Spinner>(R.id.spBw).selectedItemPosition]
         e.loOffsetMhz = LO_VAL[findViewById<Spinner>(R.id.spLo).selectedItemPosition]
         e.iqBits = if (findViewById<Spinner>(R.id.spBits).selectedItemPosition == 1) 10 else 8
+        e.paused = paused
         e.startEngine()
         engine = e
         btnConnect.setText(R.string.disconnect)

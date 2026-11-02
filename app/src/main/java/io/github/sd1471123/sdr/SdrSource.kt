@@ -33,6 +33,12 @@ interface SdrSource {
     /** Set to a recorder to stream every capture to disk; null stops recording. */
     var recorder: IqRecorder?
 
+    /**
+     * While true the capture loop stops polling frames altogether — no capture, no channel
+     * activity, no status updates. Freezing only the drawing would leave the receiver scanning.
+     */
+    var paused: Boolean
+
     fun startEngine()
     fun stopEngine()
 }

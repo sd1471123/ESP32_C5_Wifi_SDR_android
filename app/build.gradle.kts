@@ -21,8 +21,8 @@ android {
         applicationId = "io.github.sd1471123.sdr"
         minSdk = 26
         targetSdk = 34
-        versionCode = 4
-        versionName = "0.1.2"
+        versionCode = 5
+        versionName = "0.1.3"
     }
 
     signingConfigs {

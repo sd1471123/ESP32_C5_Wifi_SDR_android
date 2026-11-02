@@ -52,6 +52,8 @@ class SdrEngine(
     /** Set to a recorder to stream every capture to disk; null stops recording. */
     @Volatile override var recorder: IqRecorder? = null
 
+    @Volatile override var paused: Boolean = false
+
     @Volatile private var running = true
 
     private var appliedFreq = Int.MIN_VALUE
@@ -76,6 +78,18 @@ class SdrEngine(
         var t0 = System.currentTimeMillis()
         try {
             while (running) {
+                if (paused) {
+                    // Idle without touching the radio: the sweep state survives, so resuming
+                    // continues where it stopped instead of restarting the band.
+                    try {
+                        sleep(40)
+                    } catch (_: InterruptedException) {
+                        break
+                    }
+                    frames = 0
+                    t0 = System.currentTimeMillis()
+                    continue
+                }
                 if (mode != lastMode || band != lastBand) {
                     if (specUp) dev.stopSpec()     // the chip streams until told to stop
                     specUp = false

@@ -64,6 +64,16 @@
     <string name="marker_no_channel">%1$s 内不在信道</string>
     <string name="marker_out_of_band">不在 %1$s 频段内</string>
 
+    <!-- 配置保存 -->
+    <string name="cfg_save">保存配置</string>
+    <string name="cfg_reset">恢复默认</string>
+    <string name="cfg_saved">已保存当前配置</string>
+    <string name="cfg_reset_title">恢复默认参数？</string>
+    <string name="cfg_reset_msg">已保存的配置将被清除，所有参数回到默认值。</string>
+    <string name="cfg_reset_ok">恢复</string>
+    <string name="cfg_reset_done">已恢复默认参数</string>
+    <string name="cfg_cancel">取消</string>
+
     <!-- 检查更新 -->
     <string name="update_check">检查更新</string>
     <string name="update_icon">⟳</string>
@@ -97,7 +107,7 @@
     <string name="time_domain">时域 %1$.1f … %2$.1f dBFS</string>
     <string name="peak_readout">峰值 %1$.1f MHz</string>
     <string name="pause_icon">❚❚</string>
-    <string name="resume_icon">►</string>
+    <string name="resume_icon">▶</string>
     <string name="clear_icon">✕</string>
     <string name="agc">AGC</string>
     <string name="axis_floor">底</string>

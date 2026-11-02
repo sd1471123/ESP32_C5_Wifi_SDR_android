@@ -652,6 +652,37 @@
                         android:text="@string/gpio_open" />
                 </LinearLayout>
 
+                <!-- parameter snapshot: save the current controls / restore the defaults -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnSaveCfg"
+                        style="@style/SdrButton.Compact"
+                        android:layout_width="0dp"
+                        android:layout_height="28dp"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/cfg_save"
+                        android:textSize="10sp" />
+
+                    <Button
+                        android:id="@+id/btnResetCfg"
+                        style="@style/SdrButton.Compact"
+                        android:layout_width="0dp"
+                        android:layout_height="28dp"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/cfg_reset"
+                        android:textSize="10sp" />
+                </LinearLayout>
+
                 <!-- author credit, tapping it opens the project page -->
                 <TextView
                     android:id="@+id/txtAuthor"

@@ -44,6 +44,8 @@ class DemoEngine(
 
     @Volatile override var recorder: IqRecorder? = null
 
+    @Volatile override var paused: Boolean = false
+
     @Volatile private var running = true
     private val rnd = Random(20261102L)
     private var fps = 0f
@@ -103,6 +105,12 @@ class DemoEngine(
         var lastBand = band
         try {
             while (running) {
+                if (paused) {
+                    sleep(40)
+                    frames = 0
+                    t0 = System.currentTimeMillis()
+                    continue
+                }
                 if (mode != lastMode || band != lastBand) {
                     sweep = null
                     lastMode = mode

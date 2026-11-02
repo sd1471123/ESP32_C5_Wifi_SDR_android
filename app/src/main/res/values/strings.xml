@@ -64,6 +64,16 @@
     <string name="marker_no_channel">no channel in %1$s</string>
     <string name="marker_out_of_band">outside %1$s</string>
 
+    <!-- saved configuration -->
+    <string name="cfg_save">Save config</string>
+    <string name="cfg_reset">Defaults</string>
+    <string name="cfg_saved">Configuration saved</string>
+    <string name="cfg_reset_title">Reset to defaults?</string>
+    <string name="cfg_reset_msg">The saved configuration will be cleared and every control returns to its default value.</string>
+    <string name="cfg_reset_ok">Reset</string>
+    <string name="cfg_reset_done">Defaults restored</string>
+    <string name="cfg_cancel">Cancel</string>
+
     <!-- update check -->
     <string name="update_check">Check for updates</string>
     <string name="update_icon">⟳</string>
@@ -97,7 +107,7 @@
     <string name="time_domain">Time %1$.1f … %2$.1f dBFS</string>
     <string name="peak_readout">Peak %1$.1f MHz</string>
     <string name="pause_icon">❚❚</string>
-    <string name="resume_icon">►</string>
+    <string name="resume_icon">▶</string>
     <string name="clear_icon">✕</string>
     <string name="agc">AGC</string>
     <string name="axis_floor">Floor</string>
