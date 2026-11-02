@@ -513,7 +513,11 @@ class MainActivity : Activity() {
         }
     }
 
-    /** Status line: busiest channels, best detection rate and a clipping warning. */
+    /**
+     * Status line: busiest channels and best detection rate, with the clipping warning appended
+     * at the end. Clip never stands alone — a clip-only summary flickered the top bar between
+     * the standing message and "削顶 x %" every few frames.
+     */
     private fun summary(frame: SdrFrame): String {
         val parts = ArrayList<String>(3)
         val bars = frame.bars
@@ -526,8 +530,8 @@ class MainActivity : Activity() {
             val top = topDetected(rates, bars, frame.band)
             if (top.isNotEmpty()) parts.add(top)
         }
-        if (frame.clipPct >= 0.5f) parts.add(getString(R.string.clip_pct, frame.clipPct))
         if (parts.isEmpty()) return ""
+        if (frame.clipPct >= 0.5f) parts.add(getString(R.string.clip_pct, frame.clipPct))
         return parts.joinToString("   ")
     }
 
@@ -966,6 +970,7 @@ class MainActivity : Activity() {
     }
 
     private fun status(text: String) {
+        if (txtStatus.text.toString() == text) return   // skip the churn: identical text re-layouts anyway
         if (Looper.myLooper() == Looper.getMainLooper()) {
             txtStatus.text = text
         } else {
