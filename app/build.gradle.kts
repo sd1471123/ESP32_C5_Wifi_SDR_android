@@ -53,6 +53,8 @@ android {
     }
 }
 
-// The MVP deliberately has no third-party dependencies: raw USB CDC + a hand written FFT.
+// The MVP deliberately has no third-party dependencies in the APK: raw USB CDC + a hand written
+// FFT. junit is test-only and never ships inside the binary.
 dependencies {
+    testImplementation("junit:junit:4.13.2")
 }
