@@ -113,6 +113,12 @@
     <string name="dc_row">直流</string>
     <string name="dc_on">去除</string>
     <string name="dc_off">保留</string>
+    <string name="cap_row">采集</string>
+    <string name="cap_iq">I/Q 流</string>
+    <string name="cap_spec">片上频谱</string>
+    <string name="status_cap_on">频谱：片上 SPEC（仅实时模式）</string>
+    <string name="status_cap_off">频谱：主机 FFT</string>
+    <string name="status_spec_fail">片上频谱不可用，已回退主机 FFT：%1$s</string>
     <string name="gpio_title">GPIO</string>
     <string name="gpio_open">Z/0/1</string>
     <string name="gpio_none">板子不支持 GPIO</string>

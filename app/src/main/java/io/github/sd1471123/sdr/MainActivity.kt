@@ -379,6 +379,17 @@ class MainActivity : Activity() {
             engine?.dcRemove = pos == 0
         }
 
+        // spectrum source: phone-side FFT of a burst capture, or the chip's SPEC streamer
+        spinner(
+            R.id.spCap,
+            arrayOf(getString(R.string.cap_iq), getString(R.string.cap_spec))
+        ).onPick { pos ->
+            engine?.onChipSpectrum = pos == 1
+            if (engine != null) {
+                status(getString(if (pos == 1) R.string.status_cap_on else R.string.status_cap_off))
+            }
+        }
+
         findViewById<Button>(R.id.btnGpio).setOnClickListener { showGpioDialog() }
 
         rebuildPresets()
@@ -712,6 +723,7 @@ class MainActivity : Activity() {
                 e.centerMhz = freq
                 e.gain = manualGain
                 e.iqBits = bits
+                e.onChipSpectrum = findViewById<Spinner>(R.id.spCap).selectedItemPosition == 1
                 e.startEngine()
                 main.post {
                     dev = d

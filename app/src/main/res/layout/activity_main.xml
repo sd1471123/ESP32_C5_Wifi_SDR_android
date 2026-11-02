@@ -376,6 +376,32 @@
                         android:layout_weight="1" />
                 </LinearLayout>
 
+                <!-- where the spectrum comes from: phone-side FFT of a burst capture,
+                     or the chip's own SPEC streamer -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/SdrLabel"
+                        android:layout_width="34dp"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/cap_row" />
+
+                    <Spinner
+                        android:id="@+id/spCap"
+                        style="@style/SdrSpinner"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1" />
+                </LinearLayout>
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

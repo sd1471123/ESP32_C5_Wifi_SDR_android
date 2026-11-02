@@ -46,6 +46,9 @@ class SdrEngine(
     /** Per-frame windowed DC removal before the FFT. */
     @Volatile override var dcRemove: Boolean = true
 
+    /** Live spectrum from the chip's SPEC streamer instead of a burst capture. */
+    @Volatile override var onChipSpectrum: Boolean = false
+
     /** Set to a recorder to stream every capture to disk; null stops recording. */
     @Volatile override var recorder: IqRecorder? = null
 
@@ -74,6 +77,9 @@ class SdrEngine(
         try {
             while (running) {
                 if (mode != lastMode || band != lastBand) {
+                    if (specUp) dev.stopSpec()     // the chip streams until told to stop
+                    specUp = false
+                    specKey = ""
                     sweep = null
                     lastMode = mode
                     lastBand = band
@@ -102,6 +108,12 @@ class SdrEngine(
 
     // ---- live -------------------------------------------------------------
     private fun liveStep(): SdrFrame {
+        if (onChipSpectrum && dev.hasSpec && !specBroken) return specStep()
+        return captureFrame()
+    }
+
+    /** The classic path: burst I/Q capture, analysed by the phone. */
+    private fun captureFrame(): SdrFrame {
         val lo = centerMhz + loOffsetMhz
         if (lo != appliedFreq) {
             dev.setFreq(lo)
@@ -118,6 +130,81 @@ class SdrEngine(
         val info = context.getString(R.string.engine_info, fps, s.rmsDb, nsamp, fsMhz, fps * nsamp / 1000f)
         return SdrFrame(
             s.avgDb, s.peakDb, s.tdDb, fLo, fHi, band, info, null, null, s.clipPct
+        )
+    }
+
+    // ---- on-chip spectrum (SPEC) ------------------------------------------
+
+    /** Config that the running SPEC stream was started with; any change restarts it. */
+    private var specKey = ""
+    private var specUp = false
+
+    /** Set when the firmware refused the stream, so the phone path takes over again. */
+    private var specBroken = false
+    private var lastSpec: SdrFrame? = null
+
+    private fun specStep(): SdrFrame {
+        val lo = centerMhz + loOffsetMhz
+        // SPEC maxes out at 2048 points and a restart is the only way to apply
+        // freq/gain/bandwidth/rate changes, because the chip streams until told to stop.
+        val n = Integer.highestOneBit(nfft.coerceIn(256, 2048))
+        val key = "$lo|$gain|$bandwidthMhz|$rateIdx|$n"
+        if (!specUp || key != specKey) {
+            if (specUp) dev.stopSpec()
+            specKey = key
+            specUp = false
+            if (lo != appliedFreq) {
+                dev.setFreq(lo)
+                appliedFreq = lo
+            }
+            applyGainAndBandwidth()
+            try {
+                dev.startSpec(rateIdx, n)
+                specUp = true
+            } catch (e: SdrError) {
+                specBroken = true
+                lastSpec = null
+                listener.onNotice(context.getString(R.string.status_spec_fail, e.message.orEmpty()))
+                return captureFrame()
+            }
+        }
+
+        // newest frame wins: decode whatever arrived, redeliver the last one meanwhile
+        val deadline = System.currentTimeMillis() + 250
+        var f = dev.specPump()
+        while (f == null && System.currentTimeMillis() < deadline && dev.specRunning) {
+            Thread.sleep(4)
+            f = dev.specPump()
+        }
+        if (f != null) lastSpec = specFrame(f, lo)
+        return lastSpec ?: captureFrame()
+    }
+
+    /**
+     * Wire codes to the app's dBFS scale. The firmware encodes 20log10(power) with 1 dB per
+     * code (power = |FFT(v·hann·2^15)/n|²), so a full-scale complex sine lands at code 169;
+     * code/2 − 84.3 is the same "0 dBFS = full scale, Hann window" convention as [Dsp].
+     * The app does not negate Q, so the wire's natural frequency order just needs the
+     * fftshift: display bin i holds wire bin (i + n/2) % n.
+     */
+    private fun specFrame(f: SpecFrame, lo: Int): SdrFrame {
+        val bins = f.bins
+        val n = bins.size
+        val half = n / 2
+        val avg = FloatArray(n)
+        var sum = 0.0
+        for (i in 0 until n) {
+            val code = bins[(i + half) % n].toInt() and 0xFF
+            val db = code / 2f - 84.3f
+            avg[i] = db
+            sum += 10.0.pow(db.toDouble() / 10.0)
+        }
+        // Parseval against the phone path's window power (Hann mean-square 3/8): rms² ≈ Σp/3
+        val rmsDb = (10.0 * log10(sum / 3.0 + 1e-30)).toFloat()
+        val fsMhz = (if (f.rateHz > 0) f.rateHz else RATES[rateIdx]) / 1e6f
+        val info = context.getString(R.string.engine_info, fps, rmsDb, n, fsMhz, fps * n / 1000f)
+        return SdrFrame(
+            avg, avg.copyOf(), null, lo - fsMhz / 2f, lo + fsMhz / 2f, band, info, null, null, 0f
         )
     }
 

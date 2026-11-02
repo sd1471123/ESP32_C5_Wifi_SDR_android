@@ -39,6 +39,9 @@ class DemoEngine(
 
     @Volatile override var dcRemove: Boolean = true
 
+    /** Stored but unused: the demo synthesises its spectrum on the phone. */
+    @Volatile override var onChipSpectrum: Boolean = false
+
     @Volatile override var recorder: IqRecorder? = null
 
     @Volatile private var running = true

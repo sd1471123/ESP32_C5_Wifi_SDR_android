@@ -24,6 +24,12 @@ interface SdrSource {
     /** Remove the per-frame windowed DC before the FFT; off leaves the LO leak at bin 0. */
     var dcRemove: Boolean
 
+    /**
+     * Live spectrum from the chip's own FFT (firmware SPEC stream) instead of a burst I/Q
+     * capture analysed on the phone. Only honoured in live mode; demo engines ignore it.
+     */
+    var onChipSpectrum: Boolean
+
     /** Set to a recorder to stream every capture to disk; null stops recording. */
     var recorder: IqRecorder?
 

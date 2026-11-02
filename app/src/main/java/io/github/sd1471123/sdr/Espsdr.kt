@@ -11,6 +11,20 @@ import java.util.zip.CRC32
 class SdrError(message: String) : Exception(message)
 
 /**
+ * One on-chip spectrum frame (SPC1): power codes of [bins.size] bins, 20log10(power)
+ * with 1 dB per code, averaged (or max-held) over the FFTs the chip ran for it.
+ */
+class SpecFrame(
+    val bins: ByteArray,
+    val ffts: Int,
+    val pairs: Long,
+    val indexUs: Long,
+    val gain: Int,
+    /** Sample rate the stream was started with, from the ack line (Hz). */
+    val rateHz: Int,
+)
+
+/**
  * Client for the ESP-SDR line protocol, i.e. the same wire format `espsdr.py` speaks:
  *
  *   INFO / FREQ <MHz> / GAIN MANUAL <n> / BANDWIDTH <MHz> / CAP16 <n> <rate>
@@ -32,6 +46,10 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
     private var nonce = (System.currentTimeMillis() and 0xFFFFFF).toInt()
 
     var info: String = ""
+        private set
+
+    /** Raw CAPS reply — capability flags are matched with contains(). */
+    var caps: String = ""
         private set
 
     var maxSamples: Int = 16380
@@ -101,7 +119,7 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
             throw SdrError("no ESP-SDR firmware on this device: $info")
         }
         info.trim().split(Regex("\\s+")).getOrNull(3)?.toIntOrNull()?.let { maxSamples = it }
-        val caps = cmd("CAPS")
+        caps = cmd("CAPS")
         cmd("LIMITS?")
         // pick the cleanest analogue / digital filtering when the firmware offers it
         if (caps.contains("LPF")) tryCatch { cmd("LPF AUTO") }
@@ -125,6 +143,7 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
     fun close() {
         val c = conn ?: return
         conn = null
+        if (specActive) tryCatch { stopSpec() }
         try {
             write("RELEASE\n")
         } catch (_: Exception) {
@@ -151,6 +170,153 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
 
     /** Drive one pin: 'Z' high impedance, '0' low, '1' high. */
     fun setGpio(pin: Int, state: Char) = cmd("GPIO $pin $state")
+
+    // ---- on-chip spectrum (SPEC) ------------------------------------------
+    // `SPEC 0 1 <units> <det> <rate> <n>` makes the chip run the FFT itself and stream
+    // frames of 20log10(power) codes. The stream runs until the host sends an empty line,
+    // so no other command can be issued while it is up — stopSpec() first.
+
+    /** True when CAPS advertises the on-chip spectrum streamer. */
+    val hasSpec: Boolean get() = caps.contains("SPEC")
+
+    private val specBuf = ByteArray(1 shl 16)
+    private var specLen = 0
+    private var specLog2n = 0
+    private var specActive = false
+    private var specRateHz = 0
+    private var specNewest: SpecFrame? = null
+
+    /**
+     * Starts an infinite spectrum stream. [nfft] is rounded down to a power of two in the
+     * firmware's 256..2048 range; [det] selects max-hold instead of the FFT average.
+     * The ack line `SPEC <n> <rateHz> <n> <freqMHz>` fixes the actual sample rate.
+     */
+    fun startSpec(rateIdx: Int, nfft: Int, det: Boolean = false) {
+        val n = Integer.highestOneBit(nfft).coerceIn(256, 2048)
+        write("SPEC 0 1 1 ${if (det) 1 else 0} ${rateIdx.coerceIn(0, 5)} $n\n")
+        val ack = readLine(3000)
+        if (!ack.startsWith("SPEC ")) throw SdrError("spec start: $ack")
+        specRateHz = ack.trim().split(Regex("\\s+")).getOrNull(2)?.toIntOrNull() ?: 0
+        specLog2n = Integer.numberOfTrailingZeros(n)
+        specLen = 0
+        specNewest = null
+        specActive = true
+        drainInput()
+    }
+
+    /** True once the stream has been started and not stopped again. */
+    val specRunning: Boolean get() = specActive
+
+    /**
+     * Lossy pump: reads whatever the wire currently holds and returns the newest complete
+     * frame, or null when no new frame arrived. Stale bytes are skipped via the SPC1 tag,
+     * CRC failures cost one byte each, exactly like the web client's resync decoder.
+     */
+    fun specPump(): SpecFrame? {
+        val c = conn ?: throw SdrError("port is closed")
+        val ep = epIn ?: throw SdrError("no IN endpoint")
+        for (poll in 0 until 2) {
+            val n = c.bulkTransfer(ep, rx, rx.size, 8)
+            if (n > 0) feedSpec(rx, n) else break
+        }
+        val f = specNewest
+        specNewest = null
+        return f
+    }
+
+    /**
+     * Stops the stream (empty line) and waits for the SPECEND report; returns its status.
+     * The report is glued to the tail of the last frame (no newline after the CRC), so
+     * it has to be matched inside the line, not at its start.
+     */
+    fun stopSpec(): Int {
+        if (!specActive) return 0
+        specActive = false
+        write("\n")
+        var status = -1
+        val deadline = System.currentTimeMillis() + 3000
+        try {
+            while (System.currentTimeMillis() < deadline) {
+                val line = readLine(500)
+                val m = Regex("SPECEND (\\d+)").find(line)
+                if (m != null) {
+                    status = m.groupValues[1].toInt()
+                    break
+                }
+            }
+        } catch (_: SdrError) {
+        }
+        specLen = 0
+        specNewest = null
+        drainInput()
+        return status
+    }
+
+    /** Appends wire bytes to the frame accumulator and decodes every complete frame. */
+    private fun feedSpec(data: ByteArray, count: Int) {
+        if (specLen + count > specBuf.size) specLen = 0   // lossy: drop the backlog
+        System.arraycopy(data, 0, specBuf, specLen, count)
+        specLen += count
+        val n = 1 shl specLog2n
+        val frameLen = 32 + n
+        var p = 0
+        while (p + 4 <= specLen) {
+            val b = specBuf
+            if (b[p] == 'S'.code.toByte() && b[p + 1] == 'P'.code.toByte() &&
+                b[p + 2] == 'C'.code.toByte() && b[p + 3] == '1'.code.toByte()
+            ) {
+                if (p + frameLen > specLen) break
+                if (b[p + 26].toInt() == specLog2n && b[p + 27].toInt() == 2 &&
+                    crcAt(p, frameLen)
+                ) {
+                    val bins = ByteArray(n)
+                    System.arraycopy(b, p + 28, bins, 0, n)
+                    specNewest = SpecFrame(
+                        bins,
+                        u16(p + 20),
+                        u32(p + 16),
+                        u64(p + 8),
+                        b[p + 23].toInt() and 0xFF,
+                        specRateHz,
+                    )
+                    p += frameLen
+                } else {
+                    p++                      // damaged: resync one byte, like the web client
+                }
+            } else if (b[p] == 'S'.code.toByte() && b[p + 1] == 'P'.code.toByte() &&
+                b[p + 2] == 'E'.code.toByte() && b[p + 3] == 'C'.code.toByte()
+            ) {
+                // "SPECEND <numbers>\n": the firmware ended the stream on its own
+                var nl = p
+                while (nl < specLen && specBuf[nl] != '\n'.code.toByte()) nl++
+                if (nl >= specLen) break
+                specActive = false
+                p = nl + 1
+            } else {
+                p++
+            }
+        }
+        if (p > 0) {
+            System.arraycopy(specBuf, p, specBuf, 0, specLen - p)
+            specLen -= p
+        }
+    }
+
+    /** zlib CRC32 of specBuf[p .. p+len-4] must equal the little-endian word at p+len-4. */
+    private fun crcAt(p: Int, len: Int): Boolean {
+        val want = u32(p + len - 4)
+        val crc = CRC32()
+        crc.update(specBuf, p, len - 4)
+        return crc.value == want
+    }
+
+    private fun u16(at: Int): Int =
+        (specBuf[at].toInt() and 0xFF) or ((specBuf[at + 1].toInt() and 0xFF) shl 8)
+
+    private fun u32(at: Int): Long =
+        (u16(at).toLong() and 0xFFFF) or ((u16(at + 2).toLong() and 0xFFFF) shl 16)
+
+    private fun u64(at: Int): Long = u32(at) or (u32(at + 4) shl 32)
 
     /**
      * Capture [n] complex samples as interleaved floats (I, Q, I, Q ...) scaled to full
