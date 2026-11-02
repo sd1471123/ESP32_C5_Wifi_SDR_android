@@ -18,6 +18,9 @@ interface SdrSource {
     var bandwidthMhz: Int
     var loOffsetMhz: Int
 
+    /** Wire format: 8 = CAP16 signed bytes, 10 = CAP20 packed 10-bit (demo engine ignores it). */
+    var iqBits: Int
+
     /** Set to a recorder to stream every capture to disk; null stops recording. */
     var recorder: IqRecorder?
 

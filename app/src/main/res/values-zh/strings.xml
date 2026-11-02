@@ -87,12 +87,29 @@
     <string name="clip_pct">削顶 %1$.1f%%</string>
 
     <!-- 引擎 / 视图 -->
-    <string name="engine_info">%1$.1f 帧/秒   RMS %2$.1f dBFS   %3$d 点/%4$.0f MS/s</string>
+    <string name="engine_info">%1$.1f 帧/秒   RMS %2$.1f dBFS   %3$d 点/%4$.0f MS/s   %5$.0f kS/s</string>
     <string name="sweep_done">扫描 %1$.2f s   %2$d 步   底噪 %3$.1f dBFS</string>
     <string name="sweep_progress">扫描中 %1$d/%2$d   %3$.1f s</string>
     <string name="hint_title">C5-SDR · 频谱 / 全频段扫描</string>
     <string name="hint_body">把板子的 USB 口接到手机（OTG），然后点右上角「连接设备」</string>
     <string name="time_domain">时域 %1$.1f … %2$.1f dBFS</string>
+    <string name="peak_readout">峰值 %1$.1f MHz</string>
+    <string name="pause_icon">❚❚</string>
+    <string name="resume_icon">►</string>
+    <string name="clear_icon">✕</string>
+    <string name="agc">AGC</string>
+    <string name="axis_floor">底</string>
+    <string name="axis_span">跨度</string>
+    <string name="axis_auto">自动</string>
+    <string name="trace_avg">平均</string>
+    <string name="avg_off">关</string>
+    <string name="avg_short">短</string>
+    <string name="avg_med">中</string>
+    <string name="avg_high">高</string>
+    <string name="bits_row">位数</string>
+    <string name="bits_8">8 位</string>
+    <string name="bits_10">10 位</string>
+    <string name="status_bits">I/Q 位数：%1$d bit</string>
 
     <string-array name="modes">
         <item>实时 2.4G</item>

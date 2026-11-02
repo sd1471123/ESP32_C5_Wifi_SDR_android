@@ -87,12 +87,29 @@
     <string name="clip_pct">Clip %1$.1f%%</string>
 
     <!-- engine / view -->
-    <string name="engine_info">%1$.1f fps   RMS %2$.1f dBFS   %3$d pts/%4$.0f MS/s</string>
+    <string name="engine_info">%1$.1f fps   RMS %2$.1f dBFS   %3$d pts/%4$.0f MS/s   %5$.0f kS/s</string>
     <string name="sweep_done">Sweep %1$.2f s   %2$d steps   floor %3$.1f dBFS</string>
     <string name="sweep_progress">Sweeping %1$d/%2$d   %3$.1f s</string>
     <string name="hint_title">C5-SDR · spectrum / full-band sweep</string>
     <string name="hint_body">Plug the board\'s USB port into the phone (OTG), then tap Connect at the top right.</string>
     <string name="time_domain">Time %1$.1f … %2$.1f dBFS</string>
+    <string name="peak_readout">Peak %1$.1f MHz</string>
+    <string name="pause_icon">❚❚</string>
+    <string name="resume_icon">►</string>
+    <string name="clear_icon">✕</string>
+    <string name="agc">AGC</string>
+    <string name="axis_floor">Floor</string>
+    <string name="axis_span">Range</string>
+    <string name="axis_auto">Auto</string>
+    <string name="trace_avg">Avg</string>
+    <string name="avg_off">Off</string>
+    <string name="avg_short">Short</string>
+    <string name="avg_med">Med</string>
+    <string name="avg_high">High</string>
+    <string name="bits_row">Bits</string>
+    <string name="bits_8">8 bit</string>
+    <string name="bits_10">10 bit</string>
+    <string name="status_bits">I/Q: %1$d bit</string>
 
     <string-array name="modes">
         <item>Live 2.4G</item>

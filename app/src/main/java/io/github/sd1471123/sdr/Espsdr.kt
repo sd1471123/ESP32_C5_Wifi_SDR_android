@@ -37,6 +37,10 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
     var maxSamples: Int = 16380
         private set
 
+    /** Firmware build date from VERSION? (empty when the firmware lacks the VERSION capability). */
+    var buildDate: String = ""
+        private set
+
     val isOpen: Boolean get() = conn != null
 
     fun open() {
@@ -97,8 +101,25 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
             throw SdrError("no ESP-SDR firmware on this device: $info")
         }
         info.trim().split(Regex("\\s+")).getOrNull(3)?.toIntOrNull()?.let { maxSamples = it }
-        cmd("CAPS")
+        val caps = cmd("CAPS")
         cmd("LIMITS?")
+        // pick the cleanest analogue / digital filtering when the firmware offers it
+        if (caps.contains("LPF")) tryCatch { cmd("LPF AUTO") }
+        if (caps.contains("ALPF")) tryCatch { cmd("ALPF AUTO") }
+        if (caps.contains("VERSION")) {
+            tryCatch {
+                val v = cmd("VERSION?")
+                buildDate = Regex("\"build_date\"\\s*:\\s*\"([^\"]+)\"").find(v)?.groupValues?.get(1).orEmpty()
+            }
+        }
+    }
+
+    /** Best-effort optional command: a missing capability must never break the connection. */
+    private inline fun tryCatch(block: () -> Unit) {
+        try {
+            block()
+        } catch (_: SdrError) {
+        }
     }
 
     fun close() {
@@ -119,27 +140,28 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
 
     fun setBandwidth(mhz: Int) = cmd("BANDWIDTH ${mhz.coerceIn(0, 48)}")
 
-    /** null selects the hardware AGC, otherwise the manual PHY gain index (0..80). */
-    fun setGain(manual: Int?) = cmd(if (manual == null) "GAIN HARDWARE" else "GAIN MANUAL ${manual.coerceIn(0, 80)}")
+    /** null selects the hardware AGC, otherwise the manual PHY gain index (0..79, see LIMITS?). */
+    fun setGain(manual: Int?) = cmd(if (manual == null) "GAIN HARDWARE" else "GAIN MANUAL ${manual.coerceIn(0, 79)}")
 
     /**
      * Capture [n] complex samples as interleaved floats (I, Q, I, Q ...) scaled to full
-     * scale 1.0. [rateIdx] 0..5 selects 80/40/20/10/8/4 MS/s.
+     * scale 1.0. [rateIdx] 0..5 selects 80/40/20/10/8/4 MS/s. [bits] 8 uses CAP16 with
+     * signed bytes, 10 uses CAP20 with 10-bit packed samples (firmware LIMITS bits [8,10]).
      */
-    fun capture(n: Int, rateIdx: Int): FloatArray {
+    fun capture(n: Int, rateIdx: Int, bits: Int = 8): FloatArray {
         val count = n.coerceIn(256, maxSamples)
-        write("CAP16 $count $rateIdx\n")
+        val tenBit = bits >= 10
+        write("CAP${if (tenBit) 20 else 16} $count $rateIdx\n")
         val header = readLine(3000)
         if (!header.startsWith("DATA")) throw SdrError("capture: $header")
         val parts = header.trim().split(Regex("\\s+"))
         if (parts.size < 3) throw SdrError("capture: bad header $header")
         val got = parts[1].toInt()
         val crc = parts[2].toLong(16)
-        val payload = readExact(got * 2)
+        // 10-bit wire format: one complex sample = 20 bits (I + Q) = 2.5 bytes, packed LSB first
+        val payload = readExact(if (tenBit) got * 20 / 8 else got * 2)
         if (CRC32().apply { update(payload) }.value != crc) throw SdrError("capture: CRC mismatch")
-        val out = FloatArray(got * 2)
-        for (i in payload.indices) out[i] = payload[i] / 128f
-        return out
+        return if (tenBit) IqCodec.unpack10(payload, got) else IqCodec.unpack8(payload, got)
     }
 
     fun cmd(text: String): String {

@@ -22,6 +22,7 @@ import android.view.WindowInsetsController
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.SeekBar
 import android.widget.Spinner
@@ -50,8 +51,8 @@ class MainActivity : Activity() {
         const val GITHUB_URL = "https://github.com/sd1471123/"
 
         val RATES_TXT = arrayOf("80 MS/s", "40 MS/s", "20 MS/s", "10 MS/s", "8 MS/s", "4 MS/s")
-        val FFT_TXT = arrayOf("FFT 256", "FFT 512", "FFT 1024", "FFT 2048")
-        val FFT_VAL = intArrayOf(256, 512, 1024, 2048)
+        val FFT_TXT = arrayOf("FFT 256", "FFT 512", "FFT 1024", "FFT 2048", "FFT 4096")
+        val FFT_VAL = intArrayOf(256, 512, 1024, 2048, 4096)
         val BW_VAL = intArrayOf(0, 11, 16, 20, 24, 30, 40, 48)
         val LO_TXT = arrayOf("0", "+12 MHz", "-12 MHz", "+16 MHz", "-16 MHz")
         val LO_VAL = intArrayOf(0, 12, -12, 16, -16)
@@ -68,6 +69,11 @@ class MainActivity : Activity() {
     private lateinit var txtRecord: TextView
     private lateinit var txtBattery: TextView
     private lateinit var btnUpdate: Button
+    private lateinit var btnPause: Button
+    private lateinit var chkAgc: CheckBox
+
+    /** True freezes the display; captures and recording keep running underneath. */
+    private var paused = false
 
     private val main = Handler(Looper.getMainLooper())
     private var dev: Espsdr? = null
@@ -104,7 +110,7 @@ class MainActivity : Activity() {
             val recPoints = rec?.samples ?: 0
             val recKb = (rec?.bytes ?: 0L) / 1024
             main.post {
-                spectrum.setFrame(frame)
+                if (!paused) spectrum.setFrame(frame)
                 val line = summary(frame)
                 if (line.isNotEmpty()) status(line)
                 txtRecord.text = if (rec == null) "" else
@@ -169,6 +175,16 @@ class MainActivity : Activity() {
         setupLanguage()
         btnConnect.setOnClickListener { if (engine == null) connect() else disconnect() }
         findViewById<Button>(R.id.btnTune).setOnClickListener { applyFreq() }
+        btnPause = findViewById(R.id.btnPause)
+        btnPause.setOnClickListener {
+            paused = !paused
+            btnPause.setText(if (paused) R.string.resume_icon else R.string.pause_icon)
+        }
+        findViewById<Button>(R.id.btnClear).setOnClickListener { spectrum.clear() }
+        chkAgc = findViewById(R.id.chkAgc)
+        chkAgc.setOnCheckedChangeListener { _, checked ->
+            engine?.gain = if (checked) -1 else seekGain.progress
+        }
         btnRecord.setOnClickListener { toggleRecord() }
         findViewById<Button>(R.id.btnPrevPreset).setOnClickListener { stepPreset(-1) }
         findViewById<Button>(R.id.btnNextPreset).setOnClickListener { stepPreset(1) }
@@ -178,7 +194,7 @@ class MainActivity : Activity() {
         seekGain.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) {
                 txtGain.text = value.toString()
-                engine?.gain = value
+                engine?.gain = if (chkAgc.isChecked) -1 else value
             }
 
             override fun onStartTrackingTouch(bar: SeekBar) {}
@@ -315,6 +331,40 @@ class MainActivity : Activity() {
                 closeRadio()
                 status(getString(R.string.status_disconnected))
             }
+        }
+
+        // manual dB axis: Auto or a fixed floor, with a selectable span
+        val floorVals = IntArray(10) { -20 - it * 10 }                 // -20 … -110 dBFS
+        spinner(
+            R.id.spFloor,
+            Array(floorVals.size + 1) {
+                if (it == 0) getString(R.string.axis_auto) else floorVals[it - 1].toString()
+            }
+        ).onPick { pos ->
+            spectrum.autoScale = pos == 0
+            if (pos > 0) spectrum.manualFloor = floorVals[pos - 1].toFloat()
+        }
+
+        val spanVals = intArrayOf(30, 40, 50, 60, 70, 80, 90, 100)
+        spinner(R.id.spSpan, Array(spanVals.size) { "${spanVals[it]} dB" }).onPick { pos ->
+            spectrum.manualSpan = spanVals[pos].toFloat()
+        }
+
+        val smoothingVals = floatArrayOf(0f, 0.5f, 0.25f, 0.1f)
+        spinner(
+            R.id.spAvg,
+            arrayOf(
+                getString(R.string.avg_off), getString(R.string.avg_short),
+                getString(R.string.avg_med), getString(R.string.avg_high)
+            )
+        ).onPick { pos -> spectrum.smoothing = smoothingVals[pos] }
+
+        spinner(
+            R.id.spBits,
+            arrayOf(getString(R.string.bits_8), getString(R.string.bits_10))
+        ).onPick { pos ->
+            engine?.iqBits = if (pos == 1) 10 else 8
+            if (engine != null) status(getString(R.string.status_bits, if (pos == 1) 10 else 8))
         }
 
         rebuildPresets()
@@ -560,7 +610,8 @@ class MainActivity : Activity() {
     private fun open(device: UsbDevice) {
         status(getString(R.string.status_connecting, device.vendorId, device.productId))
         val freq = parseFreq()
-        val manualGain = seekGain.progress
+        val manualGain = if (chkAgc.isChecked) -1 else seekGain.progress
+        val bits = if (findViewById<Spinner>(R.id.spBits).selectedItemPosition == 1) 10 else 8
         val mode = currentMode
         val band = currentBand
         Thread {
@@ -572,13 +623,15 @@ class MainActivity : Activity() {
                 e.band = band
                 e.centerMhz = freq
                 e.gain = manualGain
+                e.iqBits = bits
                 e.startEngine()
                 main.post {
                     dev = d
                     engine = e
                     btnConnect.setText(R.string.disconnect)
                     btnRecord.isEnabled = true
-                    status(getString(R.string.status_connected, d.info))
+                    val info = if (d.buildDate.isEmpty()) d.info else "${d.info} · ${d.buildDate}"
+                    status(getString(R.string.status_connected, info))
                 }
             } catch (t: Throwable) {
                 main.post {
@@ -599,11 +652,12 @@ class MainActivity : Activity() {
         e.mode = currentMode
         e.band = currentBand
         e.centerMhz = parseFreq()
-        e.gain = seekGain.progress
+        e.gain = if (chkAgc.isChecked) -1 else seekGain.progress
         e.rateIdx = findViewById<Spinner>(R.id.spRate).selectedItemPosition
         e.nfft = FFT_VAL[findViewById<Spinner>(R.id.spFft).selectedItemPosition]
         e.bandwidthMhz = BW_VAL[findViewById<Spinner>(R.id.spBw).selectedItemPosition]
         e.loOffsetMhz = LO_VAL[findViewById<Spinner>(R.id.spLo).selectedItemPosition]
+        e.iqBits = if (findViewById<Spinner>(R.id.spBits).selectedItemPosition == 1) 10 else 8
         e.startEngine()
         engine = e
         btnConnect.setText(R.string.disconnect)

@@ -52,8 +52,27 @@ class SpectrumView @JvmOverloads constructor(
      */
     private var dbTop = -30f
     private var dbBot = -100f
-    private val dbSpan = 70f
+    private var dbSpan = 70f
     private val wfRows = 160
+
+    /** True: axis follows the noise floor. False: user-picked floor + span from the rail. */
+    var autoScale = true
+    var manualFloor = -100f
+        set(value) {
+            field = value
+            updateScale()
+            invalidate()
+        }
+    var manualSpan = 80f
+        set(value) {
+            field = value
+            updateScale()
+            invalidate()
+        }
+
+    /** Exponential trace averaging across frames: 0 = off, else weight of the new frame. */
+    var smoothing = 0f
+    private var smooth: FloatArray? = null
 
     private var wf: Bitmap? = null
     private var wfPix: IntArray? = null
@@ -179,7 +198,7 @@ class SpectrumView @JvmOverloads constructor(
             bars = null
             rates = null
         }
-        avg = frame.avgDb
+        avg = smoothTrace(frame.avgDb)
         peak = frame.peakDb
         td = frame.tdDb
         // A sweep only carries the channel strip on its last step: keep the last complete one so
@@ -202,7 +221,41 @@ class SpectrumView @JvmOverloads constructor(
      * window, so the noise stays dark blue and access points stand out — on a full-band sweep a
      * fixed -100…0 dBFS range put everything into the bottom 10 % of the plot.
      */
+    private fun smoothTrace(raw: FloatArray): FloatArray {
+        if (smoothing <= 0f) {
+            smooth = null
+            return raw
+        }
+        val prev = smooth
+        if (prev == null || prev.size != raw.size) {
+            return raw.copyOf().also { smooth = it }
+        }
+        for (i in raw.indices) {
+            val p = prev[i]
+            prev[i] = if (p.isNaN() || raw[i].isNaN()) raw[i] else p + smoothing * (raw[i] - p)
+        }
+        return prev
+    }
+
+    /** Wipes every trace; the empty-state hint comes back until the next frame. */
+    fun clear() {
+        avg = null
+        peak = null
+        td = null
+        bars = null
+        rates = null
+        marker = null
+        smooth = null
+        wf?.eraseColor(Color.BLACK)
+        invalidate()
+    }
     private fun updateScale() {
+        if (!autoScale) {
+            dbBot = manualFloor
+            dbTop = manualFloor + manualSpan
+            dbSpan = manualSpan
+            return
+        }
         val a = avg ?: return
         if (a.isEmpty()) return
         val p = peak ?: a
@@ -573,9 +626,23 @@ class SpectrumView @JvmOverloads constructor(
         val right = "%.0f MHz".format(viewFhi)
         canvas.drawText(right, w - label.measureText(right) - 12f * d, 18f * d, label)
         if (info.isNotEmpty()) canvas.drawText(info, 12f * d, 33f * d, tdLabel)
-        if (clipPct >= 0.05f) {
-            val text = context.getString(R.string.clip_pct, clipPct)
-            canvas.drawText(text, w - warnPaint.measureText(text) - 12f * d, 33f * d, warnPaint)
+
+        // strongest bin of the average trace, right-aligned on the info row
+        val a = avg ?: return
+        var best = -1
+        for (i in a.indices) {
+            if (a[i].isNaN()) continue
+            if (best < 0 || a[i] > a[best]) best = i
         }
+        if (best < 0) return
+        val peakFreq = dataFlo + (dataFhi - dataFlo) * best / (a.size - 1).coerceAtLeast(1)
+        val peakText = context.getString(R.string.peak_readout, peakFreq)
+        val clipText = if (clipPct >= 0.05f) context.getString(R.string.clip_pct, clipPct) else null
+        var xRight = w - 12f * d
+        if (clipText != null) {
+            canvas.drawText(clipText, xRight - warnPaint.measureText(clipText), 33f * d, warnPaint)
+            xRight -= warnPaint.measureText(clipText) + 10f * d
+        }
+        canvas.drawText(peakText, xRight - label.measureText(peakText), 33f * d, label)
     }
 }

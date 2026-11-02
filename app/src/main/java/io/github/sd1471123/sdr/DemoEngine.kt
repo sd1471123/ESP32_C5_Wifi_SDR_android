@@ -34,6 +34,9 @@ class DemoEngine(
     override var bandwidthMhz: Int = 0
     override var loOffsetMhz: Int = 0
 
+    /** The synthetic source always produces full-scale floats, so this is stored but unused. */
+    @Volatile override var iqBits: Int = 8
+
     @Volatile override var recorder: IqRecorder? = null
 
     @Volatile private var running = true
@@ -71,7 +74,7 @@ class DemoEngine(
     }
 
     /** Noise floor follows the gain slider the way a real front end does. */
-    private fun floorDb(): Float = -89f + (gain - 40) * 0.12f
+    private fun floorDb(): Float = -89f + ((if (gain < 0) 40 else gain) - 40) * 0.12f
 
     private fun truthDb(f: Float, captureCenter: Float, halfSpan: Float): Float {
         var v = floorDb() + (rnd.nextFloat() - 0.5f) * 1.8f
@@ -139,9 +142,9 @@ class DemoEngine(
         }
         val nsamp = 4096
         record(nsamp, lo, fLo, fHi)
-        val base = -48f + (gain - 40) * 0.1f
+        val base = -48f + ((if (gain < 0) 40 else gain) - 40) * 0.1f
         val td = FloatArray(48) { base + (rnd.nextFloat() - 0.5f) * 3.2f }
-        val info = context.getString(R.string.engine_info, fps, base, nsamp, fsMhz)
+        val info = context.getString(R.string.engine_info, fps, base, nsamp, fsMhz, fps * nsamp / 1000f)
         return SdrFrame(avg, peak, td, fLo, fHi, band, info, null, null, 0f)
     }
 

@@ -87,6 +87,33 @@
             android:text="@string/update_icon"
             android:textSize="13sp" />
 
+        <!-- pause freezes the picture, clear wipes every trace -->
+        <Button
+            android:id="@+id/btnPause"
+            style="@style/SdrButton.Compact"
+            android:layout_width="30dp"
+            android:layout_height="24dp"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="6dp"
+            android:layout_toStartOf="@id/btnUpdate"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp"
+            android:text="@string/pause_icon"
+            android:textSize="11sp" />
+
+        <Button
+            android:id="@+id/btnClear"
+            style="@style/SdrButton.Compact"
+            android:layout_width="30dp"
+            android:layout_height="24dp"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="6dp"
+            android:layout_toStartOf="@id/btnPause"
+            android:paddingStart="0dp"
+            android:paddingEnd="0dp"
+            android:text="@string/clear_icon"
+            android:textSize="11sp" />
+
         <TextView
             android:id="@+id/txtRecord"
             style="@style/SdrStatus"
@@ -94,7 +121,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_marginEnd="6dp"
-            android:layout_toStartOf="@id/btnUpdate"
+            android:layout_toStartOf="@id/btnClear"
             android:ellipsize="end"
             android:maxLines="1" />
 
@@ -299,6 +326,31 @@
                         android:layout_weight="1" />
                 </LinearLayout>
 
+                <!-- capture wire format: 8-bit CAP16 or 10-bit CAP20 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/SdrLabel"
+                        android:layout_width="34dp"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/bits_row" />
+
+                    <Spinner
+                        android:id="@+id/spBits"
+                        style="@style/SdrSpinner"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1" />
+                </LinearLayout>
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -373,6 +425,80 @@
                         android:layout_weight="1" />
                 </LinearLayout>
 
+                <!-- vertical axis: Auto or a fixed floor with a selectable span -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/SdrLabel"
+                        android:layout_width="34dp"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/axis_floor" />
+
+                    <Spinner
+                        android:id="@+id/spFloor"
+                        style="@style/SdrSpinner"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/SdrLabel"
+                        android:layout_width="34dp"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/axis_span" />
+
+                    <Spinner
+                        android:id="@+id/spSpan"
+                        style="@style/SdrSpinner"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1" />
+                </LinearLayout>
+
+                <!-- exponential trace averaging across frames -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        style="@style/SdrLabel"
+                        android:layout_width="34dp"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/trace_avg" />
+
+                    <Spinner
+                        android:id="@+id/spAvg"
+                        style="@style/SdrSpinner"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1" />
+                </LinearLayout>
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -393,6 +519,18 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="40" />
+
+                    <!-- hardware AGC: a checked box sends GAIN HARDWARE, the slider is ignored -->
+                    <CheckBox
+                        android:id="@+id/chkAgc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:minHeight="0dp"
+                        android:minWidth="0dp"
+                        android:text="@string/agc"
+                        android:textColor="@color/text_dim"
+                        android:textSize="9sp" />
                 </LinearLayout>
 
                 <SeekBar

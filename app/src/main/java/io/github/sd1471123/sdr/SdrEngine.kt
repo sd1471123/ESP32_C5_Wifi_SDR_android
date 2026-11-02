@@ -40,6 +40,9 @@ class SdrEngine(
     @Volatile override var loOffsetMhz: Int = 0
     @Volatile var nsamp: Int = 4096
 
+    /** Wire format of the capture: 8 = CAP16 signed bytes, 10 = CAP20 packed 10-bit. */
+    @Volatile override var iqBits: Int = 8
+
     /** Set to a recorder to stream every capture to disk; null stops recording. */
     @Volatile override var recorder: IqRecorder? = null
 
@@ -103,13 +106,13 @@ class SdrEngine(
         }
         applyGainAndBandwidth()
 
-        val iq = dev.capture(nsamp, rateIdx)
+        val iq = dev.capture(nsamp, rateIdx, iqBits)
         pump(iq)
         val s = Dsp.spectra(iq, nfft, true)
         val fsMhz = RATES[rateIdx] / 1e6f
         val fLo = lo - fsMhz / 2f
         val fHi = lo + fsMhz / 2f
-        val info = context.getString(R.string.engine_info, fps, s.rmsDb, nsamp, fsMhz)
+        val info = context.getString(R.string.engine_info, fps, s.rmsDb, nsamp, fsMhz, fps * nsamp / 1000f)
         return SdrFrame(
             s.avgDb, s.peakDb, s.tdDb, fLo, fHi, band, info, null, null, s.clipPct
         )
