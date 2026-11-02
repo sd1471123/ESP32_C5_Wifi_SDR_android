@@ -31,8 +31,7 @@ per-frame block-power strip and the scrolling waterfall.
 Right: the 2.4 GHz sweep — per-20 MHz-channel activity strip (green → red), "busiest
 channel" and "best detection" summaries in the top bar, waterfall stitching the passes.
 
-中文界面截图见 [README.zh-CN.md](README.zh-CN.md)。`docs/ui-mockup.html` is still there
-as a pixel-accurate layout mockup.
+中文界面截图见 [README.zh-CN.md](README.zh-CN.md)。
 
 ## Interface
 
@@ -225,7 +224,7 @@ app/src/main/java/io/github/sd1471123/sdr/
 app/src/main/res/values-zh/strings.xml   Chinese UI strings (values/ is English)
 tools/make_icons.ps1                     regenerates every launcher icon from icon.png
 tools/esp_sdr_*.ps1                      board probes: CAP16/CAP20, SPEC stream, TRANSPORT?/BAUD
-docs/ui-mockup.html                      pixel-accurate UI layout mockup
+docs/ui-guide.html, docs/ui-guide-en.html  numbered interface guide (source; PNG next to it)
 ```
 
 Build check: `gradle :app:assembleDebug` passes with AGP 8.5.2 / Kotlin 1.9.24 (SDK 34).

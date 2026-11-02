@@ -27,8 +27,7 @@
 左图：ch6 实时采集——平均谱（青色）、峰值保持（橙色）、dB 轴读数、逐帧块功率条与滚动瀑布图。
 右图：2.4 GHz 扫描——每 20 MHz 信道占用度条（绿→红）、顶栏"最忙信道 / 检出率最高"摘要、多轮拼接的瀑布图。
 
-英文界面截图见 [README.md](README.md)。[`docs/ui-mockup.html`](docs/ui-mockup.html) 仍保留作
-像素级布局模拟。
+英文界面截图见 [README.md](README.md)。
 
 ## 界面说明
 
@@ -217,7 +216,7 @@ app/src/main/java/io/github/sd1471123/sdr/
 app/src/main/res/values-zh/strings.xml   中文文案（values/ 为英文）
 tools/make_icons.ps1                     由 icon.png 重新生成全部启动图标
 tools/esp_sdr_*.ps1                      板子探针：CAP16/CAP20、SPEC 流、TRANSPORT?/BAUD
-docs/ui-mockup.html                      像素级界面布局模拟
+docs/ui-guide.html、ui-guide-en.html     带编号的界面说明示意图源码（同目录附渲染好的 PNG）
 ```
 
 编译检查：`gradle :app:assembleDebug` 在 AGP 8.5.2 / Kotlin 1.9.24（SDK 34）下通过。
