@@ -2,13 +2,17 @@
   <img src="icon.png" width="120" alt="C5-SDR 应用图标">
 </p>
 
-# C5-SDR — ESP32-C5 Wi-Fi SDR Android 客户端
+# C5-SDR — ESP32-C5 Wi-Fi 频谱分析仪（Android）
 
 [English](README.md) · **简体中文** · [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-本项目是 [ESP32_C5_Wifi_spectrum_analyzer](https://github.com/sd1471123/ESP32_C5_Wifi_spectrum_analyzer)
-所用 ESP32-C5 Wi-Fi SDR 固件的 Android 前端。它通过 USB（OTG）与 `espsdr.py` 使用同一套行协议通信，
-频谱图和瀑布图全部用 `Canvas` 原生绘制——不依赖 Python、Qt 或任何绘图库。
+口袋里的 **Wi-Fi 频谱分析仪**：把 **ESP32-C5** 开发板通过 **USB OTG** 接到 Android 手机，
+就能实时查看 **2.4 GHz 与 5 GHz** 频段——频谱图、瀑布图、逐信道占用度与 I/Q 录制。
+不需要额外的 SDR 硬件，也不需要 root 或 Python。
+
+底层上它是 [ESP32_C5_Wifi_spectrum_analyzer](https://github.com/sd1471123/ESP32_C5_Wifi_spectrum_analyzer)
+所用 ESP32-C5 Wi-Fi SDR 固件的 Android 前端，与 `espsdr.py` 使用同一套行协议通信，
+频谱图和瀑布图全部用 `Canvas` 原生绘制——不依赖 Qt 或任何绘图库。
 
 作者：**arara** · <https://github.com/sd1471123/>
 

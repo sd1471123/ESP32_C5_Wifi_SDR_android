@@ -2,14 +2,18 @@
   <img src="icon.png" width="120" alt="C5-SDR app icon">
 </p>
 
-# C5-SDR — ESP32-C5 Wi-Fi SDR for Android
+# C5-SDR — Wi-Fi spectrum analyzer for ESP32-C5 on Android
 
 **English** · [简体中文](README.zh-CN.md) · [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-An Android front-end for the ESP32-C5 Wi-Fi SDR firmware used by
-[ESP32_C5_Wifi_spectrum_analyzer](https://github.com/sd1471123/ESP32_C5_Wifi_spectrum_analyzer).
-It talks the same line protocol as `espsdr.py` over USB (OTG), and draws the spectrum and
-waterfall natively with `Canvas` — no Python, no Qt, no plotting library.
+A Wi-Fi spectrum analyzer in your pocket: plug an **ESP32-C5** board into an Android phone over
+**USB OTG** and watch the **2.4 GHz and 5 GHz** bands live — spectrum, waterfall, per-channel
+occupancy and I/Q recording. No extra SDR hardware, no root, no Python.
+
+Under the hood it is the Android front-end for the ESP32-C5 Wi-Fi SDR firmware used by
+[ESP32_C5_Wifi_spectrum_analyzer](https://github.com/sd1471123/ESP32_C5_Wifi_spectrum_analyzer):
+it speaks the same line protocol as `espsdr.py` and draws everything natively with `Canvas` —
+no Qt, no plotting library.
 
 Author: **arara** · <https://github.com/sd1471123/>
 
