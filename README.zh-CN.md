@@ -35,6 +35,7 @@
 ![带编号的界面说明](docs/ui-guide.png)
 
 英文界面说明见 [README.md](README.md#interface)（示意图为 [`docs/ui-guide-en.png`](docs/ui-guide-en.png)）。
+示意图源码是 [`docs/ui-guide.html`](docs/ui-guide.html)，改完用无头浏览器重新导出 PNG 即可。
 
 示意图绘制的是**扫描模式 + 演示数据**，此时所有面板都有内容；实时模式只是少了 22、23 两行。
 左侧栏可滚动，编号只覆盖它的上半部分。

@@ -85,6 +85,8 @@ occupied*. High 22 + high 23 = a steady AP; high 22 + low 23 = something intermi
 high 23 = a weak but constant signal from far away.
 
 The Chinese version of this guide is in [README.zh-CN.md](README.zh-CN.md).
+The picture itself is generated from [`docs/ui-guide-en.html`](docs/ui-guide-en.html) — edit that and
+re-export the PNG with a headless browser.
 
 ## Related projects
 
