@@ -13,6 +13,20 @@ waterfall natively with `Canvas` — no Python, no Qt, no plotting library.
 
 Author: **arara** · <https://github.com/sd1471123/>
 
+## Screenshots
+
+Pixel-accurate UI mockups rendered 1 px = 1 dp from [`docs/ui-mockup.html`](docs/ui-mockup.html),
+which mirrors the real `activity_main.xml` layout, strings and `SpectrumView` drawing code.
+
+| Live 2.4 GHz | Full-band sweep, 5 GHz |
+| --- | --- |
+| <img src="docs/screen-en-live.png" width="420"> | <img src="docs/screen-en-sweep.png" width="420"> |
+
+Left: live capture at ch6 — average trace (cyan), peak hold (orange), tap marker with the
+channel readout, per-frame block-power strip and the scrolling waterfall.
+Right: the 39-step 5 GHz sweep — per-20 MHz-channel activity strip (green → red), detection
+rates, "busiest channel" summary in the top bar and a clipping warning.
+
 ## Related projects
 
 | Part | Repository | What it is |
@@ -130,6 +144,7 @@ app/src/main/java/io/github/sd1471123/sdr/
   MainActivity.kt USB permission, mode/parameter spinners, recording, language, UI wiring
 app/src/main/res/values-zh/strings.xml   Chinese UI strings (values/ is English)
 tools/make_icons.ps1                     regenerates every launcher icon from icon.png
+docs/ui-mockup.html                      pixel-accurate UI mockup, source of the screenshots above
 ```
 
 Build check: `gradle :app:assembleDebug` passes with AGP 8.5.2 / Kotlin 1.9.24 (SDK 34).

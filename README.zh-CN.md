@@ -12,6 +12,18 @@
 
 作者：**arara** · <https://github.com/sd1471123/>
 
+## 界面预览
+
+以下界面模拟图由 [`docs/ui-mockup.html`](docs/ui-mockup.html) 按 1 px = 1 dp 渲染生成，
+布局、文案与 `SpectrumView` 的绘制逻辑均与真实 App 一致。
+
+| 实时 2.4 GHz | 全频段扫描 5 GHz |
+| --- | --- |
+| <img src="docs/screen-zh-live.png" width="420"> | <img src="docs/screen-zh-sweep.png" width="420"> |
+
+左图：ch6 实时采集——平均谱（青色）、峰值保持（橙色）、单击游标与信道读数、逐帧块功率条与滚动瀑布图。
+右图：5 GHz 39 步全频段扫描——每 20 MHz 信道占用度条（绿→红）、检出率条、顶栏"最忙信道"摘要与削顶告警。
+
 ## 关联项目
 
 | 组成 | 仓库 | 说明 |
@@ -128,6 +140,7 @@ app/src/main/java/io/github/sd1471123/sdr/
   MainActivity.kt USB 权限、模式/参数下拉框、录制、语言切换、界面装配
 app/src/main/res/values-zh/strings.xml   中文文案（values/ 为英文）
 tools/make_icons.ps1                     由 icon.png 重新生成全部启动图标
+docs/ui-mockup.html                      像素级界面模拟，上面截图的源文件
 ```
 
 编译检查：`gradle :app:assembleDebug` 在 AGP 8.5.2 / Kotlin 1.9.24（SDK 34）下通过。

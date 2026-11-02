@@ -2,7 +2,14 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>ESP32-C5 SDR · Android 界面模拟（横屏）</title>
+<title>C5-SDR · UI mockup</title>
+<!--
+  Pixel-accurate mockup of the Android UI, rebuilt from the real sources:
+    app/src/main/res/layout/activity_main.xml   (1 px here = 1 dp on the phone)
+    app/src/main/java/.../SpectrumView.kt      (same drawing maths and colours)
+    app/src/main/res/values{,-zh}/strings.xml  (same wording)
+  Screenshot one variant with ?v=en-live | en-sweep | zh-live | zh-sweep
+-->
 <style>
   :root {
     --bg: #0A0C0F;
@@ -15,469 +22,412 @@
     --accent: #00C8FF;
     --accent-deep: #0C2E38;
     --accent-stroke: #1B6C84;
-    --peak: #FFA53D;
-    --marker: #6EF0B0;
-    --danger: #FF6B6B;
   }
   * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #0A0C0F; }
   body {
-    margin: 0;
-    padding: 34px 20px 50px;
-    background: radial-gradient(circle at 50% 0%, #1b1e24 0%, #08090b 62%);
-    color: var(--text);
-    font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+    width: 900px; height: 496px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: Roboto, "Segoe UI", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
   }
-  h1 { font-size: 19px; font-weight: 600; text-align: center; margin: 0 0 6px; color: #e8e8ee; }
-  .sub { text-align: center; color: var(--dim); font-size: 12.5px; margin-bottom: 26px; }
-  .row { display: flex; gap: 28px; justify-content: center; flex-wrap: wrap; }
+
   .phone {
-    width: 792px;
-    border-radius: 26px;
-    padding: 8px;
-    background: linear-gradient(160deg, #3a3a44, #17171b 40%, #2a2a32);
-    box-shadow: 0 22px 54px rgba(0,0,0,.65), 0 0 0 1px rgba(255,255,255,.06);
+    width: 900px; height: 496px; padding: 10px;
+    border-radius: 34px;
+    background: linear-gradient(160deg, #262b33, #14171c 45%, #1d2229);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06);
   }
   .screen {
-    border-radius: 20px;
-    overflow: hidden;
-    background: var(--bg);
-    height: 358px;
-    display: flex;
-    flex-direction: column;
-    padding: 8px;
-    gap: 8px;
+    width: 880px; height: 476px;
+    border-radius: 24px; overflow: hidden;
+    background: var(--bg); padding: 8px;
+    display: flex; flex-direction: column; gap: 8px;
   }
+
+  /* ---------- top bar ---------- */
   .topbar {
-    display: flex; align-items: center; gap: 12px;
-    background: var(--panel); border: 1px solid var(--stroke);
-    border-radius: 14px; padding: 6px 6px 6px 14px; height: 44px;
+    height: 28px; flex: none;
+    background: var(--panel); border: 1px solid var(--stroke); border-radius: 18px;
+    display: flex; align-items: center; padding: 0 4px 0 12px;
   }
-  .title { font-size: 14px; font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
-  .status { flex: 1; font-size: 10.5px; color: var(--dim); line-height: 1.35; overflow: hidden; }
+  .title { font-size: 13px; font-weight: 700; letter-spacing: .04em; color: var(--text); }
+  .clockgrp { display: flex; align-items: center; gap: 10px; margin-left: 14px; }
+  .clock { font-size: 11px; font-weight: 700; letter-spacing: .03em; color: var(--text); }
+  .batt { font-size: 11px; font-weight: 700; color: var(--dim); }
+  .status {
+    flex: 1; min-width: 0; margin-left: 12px;
+    font-size: 9px; line-height: 1.35; color: var(--dim);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .btn {
-    background: #1A1F27; color: var(--text); border: 1px solid var(--input-stroke);
-    border-radius: 9px; padding: 7px 14px; font-size: 12.5px; white-space: nowrap;
+    height: 24px; flex: none; display: flex; align-items: center; justify-content: center;
+    padding: 0 9px; border-radius: 10px; font-size: 10px; letter-spacing: .02em;
+    background: #1A1F27; border: 1px solid var(--input-stroke); color: var(--text);
+    white-space: nowrap;
   }
-  .btn.off { color: #5d6673; border-color: #1c2129; background: #14171c; }
+  .btn.icon { width: 30px; padding: 0; font-size: 13px; }
   .btn.accent { background: var(--accent-deep); border-color: var(--accent-stroke); color: var(--accent); }
-  .body { display: flex; gap: 8px; flex: 1; min-height: 0; }
+  .btn + .btn { margin-left: 6px; }
+
+  /* ---------- content ---------- */
+  .body { flex: 1; display: flex; gap: 8px; min-height: 0; }
   .rail {
-    width: 210px; background: var(--panel); border: 1px solid var(--stroke);
-    border-radius: 14px; padding: 10px; display: flex; flex-direction: column; gap: 7px;
+    width: 140px; flex: none; overflow: hidden;
+    background: var(--panel); border: 1px solid var(--stroke); border-radius: 18px;
+    padding: 8px; display: flex; flex-direction: column;
   }
-  .grid2 { display: flex; gap: 7px; }
-  .col { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-  .lab { font-size: 9.5px; color: var(--dim); letter-spacing: .07em; }
-  .field {
-    background: var(--input); border: 1px solid var(--input-stroke); border-radius: 9px;
-    height: 30px; display: flex; align-items: center; justify-content: space-between;
-    padding: 0 8px 0 9px; font-size: 12px; color: var(--text); gap: 6px;
+  .row { display: flex; align-items: center; height: 32px; }
+  .row.mt { margin-top: 4px; }
+  .row.nav { height: 24px; margin-top: 3px; justify-content: flex-end; }
+  .lab {
+    width: 34px; flex: none; font-size: 8px; letter-spacing: .08em; color: var(--dim);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .field .caret { color: #7F8896; font-size: 8px; }
-  .field input { all: unset; color: var(--text); font-size: 12.5px; width: 100%; }
-  .tune {
-    background: #1A1F27; border: 1px solid var(--input-stroke); border-radius: 9px;
-    height: 30px; padding: 0 12px; display: flex; align-items: center; font-size: 12px;
+  .spin {
+    flex: 1; min-width: 0; margin-left: 4px; height: 32px;
+    background: var(--input); border: 1px solid var(--input-stroke); border-radius: 10px;
+    display: flex; align-items: center; padding: 0 18px 0 7px;
+    font-size: 8px; color: var(--text); position: relative;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .gainrow { display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; color: var(--dim); }
-  .gainrow b { color: var(--text); font-size: 12px; font-weight: 500; }
-  .track { height: 3px; border-radius: 2px; background: #252B34; position: relative; margin-top: 4px; }
-  .track::after { content: ""; position: absolute; left: 0; top: 0; height: 100%; width: 50%; border-radius: 2px; background: var(--accent); }
-  .knob { position: absolute; left: 50%; top: 50%; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border-radius: 50%; background: #e9e9f0; }
-  canvas { flex: 1; min-width: 0; display: block; border-radius: 14px; }
-  .caption { text-align: center; margin-top: 12px; font-size: 12px; color: #9a9aa4; line-height: 1.6; }
-  .caption b { color: #d8d8de; }
-  .legend { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; margin-top: 22px; font-size: 11.5px; color: var(--dim); }
-  .chip { display: inline-flex; align-items: center; gap: 6px; }
-  .dot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+  .spin::after {
+    content: ""; position: absolute; right: 6px; top: 50%; margin-top: -2.5px;
+    width: 7px; height: 5px; background: var(--dim);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+  }
+  .btn.nav { width: 40px; padding: 0; font-size: 10px; }
+  .btn.nav + .btn.nav { margin-left: 4px; }
+
+  .freqblk { margin-top: 4px; }
+  .freqblk .lab { width: auto; }
+  .freqrow { display: flex; align-items: center; margin-top: 3px; }
+  .input {
+    flex: 1; min-width: 0; height: 32px; border-radius: 10px;
+    background: var(--input); border: 1px solid var(--input-stroke);
+    display: flex; align-items: center; padding: 0 8px; font-size: 12px; color: var(--text);
+  }
+  .btn.tune { height: 32px; margin-left: 4px; padding: 0 12px; font-size: 11px; }
+
+  .gainrow { margin-top: 4px; display: flex; align-items: center; justify-content: space-between; }
+  .gainrow .lab { flex: 1; width: auto; }
+  .val { font-size: 11px; color: var(--text); }
+  .seek { position: relative; height: 24px; margin-top: 2px; }
+  .track { position: absolute; left: 1px; right: 1px; top: 10px; height: 3px; border-radius: 2px; background: var(--input-stroke); }
+  .fill { position: absolute; left: 1px; top: 10px; height: 3px; width: 50%; border-radius: 2px; background: var(--accent); }
+  .knob {
+    position: absolute; left: 50%; top: 11.5px; width: 14px; height: 14px; margin: -7px 0 0 -7px;
+    border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(0, 200, 255, .16);
+  }
+  .author {
+    margin-top: 5px; font-size: 8px; line-height: 1.4; color: var(--dim); letter-spacing: .01em;
+  }
+
+  canvas { display: block; border-radius: 18px; flex: 1; min-width: 0; }
 </style>
 </head>
 <body>
-<h1>ESP32-C5 SDR · Android 界面模拟（横屏）</h1>
-<div class="sub">按 <code>activity_main.xml</code> 与 <code>SpectrumView</code> 当前绘制逻辑：顶部工具条 + 左栏 + 频谱，自适应纵轴 / 时域条 / 活动度条 + 检出率条 / 瀑布</div>
-
-<div class="row">
-  <!-- 实时 2.4 GHz -->
-  <div>
-    <div class="phone"><div class="screen">
-      <div class="topbar">
-        <div class="title">ESP32-C5 SDR</div>
-        <div class="status">已连接：C5SDR 6 burst 16380</div>
-        <div class="btn">录制 I/Q</div>
-        <div class="btn accent">断开连接</div>
-      </div>
-      <div class="body">
-        <div class="rail">
-          <div class="grid2">
-            <div class="col">
-              <div class="lab">模式</div>
-              <div class="field"><span>实时 2.4G</span><span class="caret">▼</span></div>
-            </div>
-            <div class="col">
-              <div class="lab">信道预设</div>
-              <div class="field"><span>ch6 · 20M</span><span class="caret">▼</span></div>
-            </div>
-          </div>
-          <div class="col">
-            <div class="lab">中心频率 MHz</div>
-            <div style="display:flex;gap:7px">
-              <div class="field" style="flex:1"><span>2437</span></div>
-              <div class="tune">调谐</div>
-            </div>
-          </div>
-          <div class="grid2">
-            <div class="col">
-              <div class="lab">采样率</div>
-              <div class="field"><span>80 MS/s</span><span class="caret">▼</span></div>
-            </div>
-            <div class="col">
-              <div class="lab">FFT 点数</div>
-              <div class="field"><span>FFT 256</span><span class="caret">▼</span></div>
-            </div>
-          </div>
-          <div class="grid2">
-            <div class="col">
-              <div class="lab">模拟带宽</div>
-              <div class="field"><span>带宽 最大</span><span class="caret">▼</span></div>
-            </div>
-            <div class="col">
-              <div class="lab">LO 偏移</div>
-              <div class="field"><span>LO 偏移 0</span><span class="caret">▼</span></div>
-            </div>
-          </div>
-          <div>
-            <div class="gainrow"><span>增益</span><b>40</b></div>
-            <div class="track"><div class="knob"></div></div>
-          </div>
-        </div>
-        <canvas id="cv1"></canvas>
-      </div>
-    </div></div>
-    <div class="caption"><b>实时 2.4 GHz</b> · 2437 MHz / 80 MS/s / FFT 256<br>顶部工具条 + 左栏控件；频率与 LO 仅在实时模式出现</div>
-  </div>
-
-  <!-- 扫描 5 GHz -->
-  <div>
-    <div class="phone"><div class="screen">
-      <div class="topbar">
-        <div class="title">ESP32-C5 SDR</div>
-        <div class="status">最忙：ch64 5320MHz +13dB &nbsp; ch48 5240MHz +13dB &nbsp; 检出率最高：ch64 100%</div>
-        <div class="btn">录制 I/Q</div>
-        <div class="btn accent">断开连接</div>
-      </div>
-      <div class="body">
-        <div class="rail">
-          <div class="grid2">
-            <div class="col">
-              <div class="lab">模式</div>
-              <div class="field"><span>扫描 5G</span><span class="caret">▼</span></div>
-            </div>
-            <div class="col">
-              <div class="lab">信道预设</div>
-              <div class="field"><span>ch36+ · 80M</span><span class="caret">▼</span></div>
-            </div>
-          </div>
-          <div class="grid2">
-            <div class="col">
-              <div class="lab">采样率</div>
-              <div class="field"><span>80 MS/s</span><span class="caret">▼</span></div>
-            </div>
-            <div class="col">
-              <div class="lab">FFT 点数</div>
-              <div class="field"><span>FFT 256</span><span class="caret">▼</span></div>
-            </div>
-          </div>
-          <div class="col">
-            <div class="lab">模拟带宽</div>
-            <div class="field"><span>带宽 最大</span><span class="caret">▼</span></div>
-          </div>
-          <div>
-            <div class="gainrow"><span>增益</span><b>40</b></div>
-            <div class="track"><div class="knob"></div></div>
-          </div>
-        </div>
-        <canvas id="cv2"></canvas>
-      </div>
-    </div></div>
-    <div class="caption"><b>扫描 5 GHz</b> · 5150–5895 MHz（39 步）<br>中心频率行与 LO 列隐藏，带宽自动拉满整行</div>
-  </div>
-</div>
-
-<div class="legend">
-  <span class="chip"><i class="dot" style="background:#00c8ff"></i>平均谱</span>
-  <span class="chip"><i class="dot" style="background:#ffa53d"></i>峰值保持</span>
-  <span class="chip"><i class="dot" style="background:#6ef0b0"></i>标记</span>
-  <span class="chip"><i class="dot" style="background:#00a0d2"></i>时域块功率</span>
-  <span class="chip"><i class="dot" style="background:linear-gradient(90deg,#00c8ff,#ff6060)"></i>检出率</span>
-  <span class="chip"><i class="dot" style="background:#ff6060"></i>削顶提示</span>
-  <span class="chip"><i class="dot" style="background:linear-gradient(90deg,#0033ff,#00ffcc,#ffff00,#ff2200)"></i>瀑布图</span>
-</div>
-
+<div class="phone"><div class="screen" id="screen"></div></div>
 <script>
-function gauss(x, mu, sigma) {
-  const d = (x - mu) / sigma;
-  return Math.exp(-0.5 * d * d);
+const V = (new URLSearchParams(location.search).get('v') || 'en-live').toLowerCase();
+const ZH = V.startsWith('zh');
+const SWEEP = V.indexOf('sweep') >= 0;
+
+const S = {
+  en: {
+    connect: 'Disconnect', record: 'Record I/Q',
+    statusLive: 'Connected: ESP-SDR C5 1.0 16380',
+    statusSweep: 'Busiest: ch48 5240 MHz +21 dB&nbsp;&nbsp;&nbsp;ch149 5745 MHz +16 dB&nbsp;&nbsp;&nbsp;Best detection: ch64 100%',
+    modeLive: 'Live 2.4G', modeSweep: 'Sweep 5G',
+    labMode: 'Mode', labPreset: 'Preset', labFreq: 'Centre MHz', labRate: 'Rate',
+    labFft: 'FFT', labBw: 'BW', labLo: 'LO', labGain: 'Gain', labLang: 'Lang',
+    tune: 'Tune', preset: 'ch6 2437·20M', rate: '80 MS/s', fft: 'FFT 512',
+    bw: 'Max', lo: '0', lang: 'English',
+    author: 'by arara<br>github.com/sd1471123',
+    infoLive: '27.6 fps   RMS -46.2 dBFS   4096 pts/80 MS/s',
+    infoSweep: 'Sweep 1.68 s   39 steps   floor -89.4 dBFS',
+    td: 'Time -49.5 … -47.2 dBFS',
+    clip: 'Clip 1.2%',
+    markerSub: 'ch6 · 2.4 GHz · 20 MHz'
+  },
+  zh: {
+    connect: '断开连接', record: '录制 I/Q',
+    statusLive: '已连接：ESP-SDR C5 1.0 16380',
+    statusSweep: '最忙：ch48 5240MHz +21 dB&nbsp;&nbsp;&nbsp;ch149 5745MHz +16 dB&nbsp;&nbsp;&nbsp;检出率最高：ch64 100%',
+    modeLive: '实时 2.4G', modeSweep: '扫描 5G',
+    labMode: '模式', labPreset: '预设', labFreq: '中心频率 MHz', labRate: '采样率',
+    labFft: 'FFT', labBw: '带宽', labLo: 'LO', labGain: '增益', labLang: '语言',
+    tune: '调谐', preset: 'ch6 2437·20M', rate: '80 MS/s', fft: 'FFT 512',
+    bw: '最大', lo: '0', lang: '中文',
+    author: '作者 arara<br>github.com/sd1471123',
+    infoLive: '27.6 帧/秒   RMS -46.2 dBFS   4096 点/80 MS/s',
+    infoSweep: '扫描 1.68 s   39 步   底噪 -89.4 dBFS',
+    td: '时域 -49.5 … -47.2 dBFS',
+    clip: '削顶 1.2%',
+    markerSub: 'ch6 · 2.4 GHz · 20 MHz'
+  }
+}[ZH ? 'zh' : 'en'];
+
+const row = (label, value) =>
+  `<div class="row mt"><div class="lab">${label}</div><div class="spin">${value}</div></div>`;
+
+const rail =
+  `<div class="rail">` +
+  row(S.labMode, SWEEP ? S.modeSweep : S.modeLive) +
+  (SWEEP ? '' :
+    row(S.labPreset, S.preset) +
+    `<div class="row nav"><div class="btn nav">◀</div><div class="btn nav">▶</div></div>` +
+    `<div class="freqblk"><div class="lab">${S.labFreq}</div>` +
+    `<div class="freqrow"><div class="input">2437</div><div class="btn tune">${S.tune}</div></div></div>`) +
+  row(S.labRate, S.rate) +
+  row(S.labFft, S.fft) +
+  row(S.labBw, S.bw) +
+  (SWEEP ? '' : row(S.labLo, S.lo)) +
+  `<div class="gainrow"><div class="lab">${S.labGain}</div><div class="val">40</div></div>` +
+  `<div class="seek"><div class="track"></div><div class="fill"></div><div class="knob"></div></div>` +
+  row(S.labLang, S.lang) +
+  `<div class="author">${S.author}</div>` +
+  `</div>`;
+
+document.getElementById('screen').innerHTML =
+  `<div class="topbar">
+     <div class="title">C5-SDR</div>
+     <div class="clockgrp"><div class="clock">14:32</div><div class="batt">⚡87%</div></div>
+     <div class="status">${SWEEP ? S.statusSweep : S.statusLive}</div>
+     <div class="btn icon">⟳</div>
+     <div class="btn">${S.record}</div>
+     <div class="btn accent">${S.connect}</div>
+   </div>` +
+  `<div class="body">${rail}<canvas id="cv"></canvas></div>`;
+
+// ---------------------------------------------------------------- spectrum
+const canvas = document.getElementById('cv');
+const dpr = window.devicePixelRatio || 1;
+const W = canvas.clientWidth, H = canvas.clientHeight;
+canvas.width = Math.round(W * dpr);
+canvas.height = Math.round(H * dpr);
+const ctx = canvas.getContext('2d');
+ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+const C = {
+  bg: '#0E1117', grid: '#232A33', axis: '#6B7480',
+  avg: '#00C8FF', peak: '#FFA53D', peakFill: 'rgba(255,165,61,0.19)',
+  tdBg: '#12161C', tdBar: '#00A0D2', tdLabel: '#8FA3B8',
+  label: '#CBD2DC', marker: '#6EF0B0', markerSub: '#8CDCBE', warn: '#FF6B6B'
+};
+
+const gauss = (x, mu, sig) => Math.exp(-0.5 * Math.pow((x - mu) / sig, 2));
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+function hsv(h, s, v) {
+  h = ((h % 360) + 360) % 360 / 60;
+  const i = Math.floor(h), f = h - i;
+  const p = v * (1 - s), q = v * (1 - s * f), t = v * (1 - s * (1 - f));
+  const rgb = [[v, t, p], [q, v, p], [p, v, t], [p, q, v], [t, p, v], [v, p, q]][i % 6];
+  return rgb.map(c => Math.round(c * 255));
+}
+const colorFor = (db, bot, span) => {
+  const t = Math.max(0, Math.min(1, (db - bot) / span));
+  return hsv(240 - 240 * t, 1, 0.38 + 0.62 * t);
+};
+
+// ---- synthetic but plausible spectra, same shapes the firmware produces
+const fLo = SWEEP ? 5150 : 2397;
+const fHi = SWEEP ? 5895 : 2477;
+const N = SWEEP ? 512 : 384;
+
+const aps = SWEEP
+  ? [[5180, 16, 4.5], [5220, 20, 4.5], [5240, 22, 4.5], [5260, 10, 4], [5320, 19, 4.5],
+     [5500, 6, 4], [5560, 9, 4], [5580, 6, 3.5], [5660, 5, 4], [5700, 7, 4],
+     [5720, 13, 4], [5745, 11, 4], [5805, 14, 4], [5825, 6, 3.5]]
+  : [[2412, 34, 3.5], [2437, 38, 4], [2462, 30, 3.5], [2432, 7, 1.6], [2447, 6, 1.6]];
+
+const skirts = SWEEP
+  ? []
+  : [[2412, 6, 8], [2437, 6, 9], [2462, 5, 8]]; // wide OFDM skirts
+
+const base = SWEEP ? -89.4 : -89.0;
+const avg = [], peak = [];
+for (let i = 0; i < N; i++) {
+  const f = fLo + (fHi - fLo) * i / (N - 1);
+  let v = base + rnd(-1.1, 1.1);
+  for (const [fc, amp, sig] of aps) v += amp * gauss(f, fc, sig);
+  for (const [fc, amp, sig] of skirts) v += amp * gauss(f, fc, sig);
+  if (!SWEEP) v -= 3.5 * Math.pow((f - 2437) / 40, 2); // smooth passband roll-off
+  avg.push(v);
+  peak.push(v + rnd(2.5, 5.5));
 }
 
-function makeLive(n, fLo, fHi) {
-  const avg = [], peak = [];
-  for (let i = 0; i < n; i++) {
-    const f = fLo + (fHi - fLo) * i / (n - 1);
-    let v = -88 + Math.random() * 3;
-    v += 28 * gauss(f, 2412, 7) + 30 * gauss(f, 2437, 8) + 25 * gauss(f, 2462, 7);
-    v += 8 * gauss(f, 2432, 2) + 6 * gauss(f, 2447, 2);
-    avg.push(v);
-    peak.push(v + 4 + Math.random() * 3);
-  }
-  return { avg, peak };
+// rolling auto-scale, exactly like SpectrumView.updateScale()
+const sorted = [...avg].sort((a, b) => a - b);
+const floorDb = sorted[Math.floor(sorted.length * 0.2)];
+const strongest = Math.max(...peak);
+let dbTop = floorDb + 55;
+if (strongest > dbTop - 8) dbTop = strongest + 8;
+const dbBot = dbTop - 70, dbSpan = 70;
+
+// ---- geometry, straight out of onDraw()
+const headerH = 38;
+const plotH = H - headerH;
+const specH = Math.round(plotH * 0.46);
+const tdH = SWEEP ? 0 : Math.round(plotH * 0.13);
+const barH = SWEEP ? Math.round(plotH * 0.08) : 0;
+const rateH = SWEEP ? Math.round(plotH * 0.05) : 0;
+const tdTop = headerH + specH + 2;
+const barTop = tdTop + tdH;
+const rateTop = barTop + barH;
+const wfTop = rateTop + rateH + 2;
+const wfH = H - wfTop;
+const yFor = db => {
+  const t = Math.max(0, Math.min(1, (db - dbBot) / dbSpan));
+  return headerH + specH - 4 - t * (specH - 8);
+};
+const xFor = i => W * i / (N - 1);
+
+ctx.fillStyle = C.bg;
+ctx.fillRect(0, 0, W, H);
+
+// dB grid
+ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+ctx.font = '9px Roboto, "Segoe UI", sans-serif';
+ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+for (let db = Math.ceil(dbBot / 20) * 20; db <= dbTop; db += 20) {
+  const y = Math.round(yFor(db)) + 0.5;
+  ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  ctx.fillStyle = C.axis; ctx.fillText(String(Math.round(db)), 6, y - 2.5);
 }
 
-function makeSweep(n, fLo, fHi) {
-  const avg = [], peak = [];
-  const aps = [[5180, 12], [5240, 13], [5260, 11], [5320, 13], [5500, 10], [5560, 11],
-               [5600, 9], [5660, 8], [5700, 7], [5720, 9], [5745, 8], [5805, 12], [5825, 7]];
-  for (let i = 0; i < n; i++) {
-    const f = fLo + (fHi - fLo) * i / (n - 1);
-    let v = -89 + Math.random() * 2.5;
-    for (const [fc, amp] of aps) v += amp * gauss(f, fc, 6);
-    avg.push(v);
-    peak.push(v + 3.5 + Math.random() * 2.5);
-  }
-  return { avg, peak };
+// peak-hold fill + line
+ctx.beginPath();
+ctx.moveTo(0, headerH + specH);
+for (let i = 0; i < N; i++) ctx.lineTo(xFor(i), yFor(peak[i]));
+ctx.lineTo(W, headerH + specH); ctx.closePath();
+ctx.fillStyle = C.peakFill; ctx.fill();
+
+ctx.strokeStyle = C.peak; ctx.lineWidth = 1.5; ctx.beginPath();
+for (let i = 0; i < N; i++) { const x = xFor(i), y = yFor(peak[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+ctx.stroke();
+
+// average
+ctx.strokeStyle = C.avg; ctx.lineWidth = 2; ctx.beginPath();
+for (let i = 0; i < N; i++) { const x = xFor(i), y = yFor(avg[i]); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
+ctx.stroke();
+
+// marker (single tap) — live variant only
+if (!SWEEP) {
+  const m = 2437.0;
+  const x = W * (m - fLo) / (fHi - fLo);
+  const idx = Math.round((m - fLo) / (fHi - fLo) * (N - 1));
+  ctx.strokeStyle = C.marker; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(x, headerH); ctx.lineTo(x, headerH + specH); ctx.stroke();
+  const txt = `${m.toFixed(1)} MHz  ${avg[idx].toFixed(1)} dBFS`;
+  ctx.font = '12px Roboto, "Segoe UI", sans-serif';
+  const tw = ctx.measureText(txt).width;
+  ctx.fillStyle = C.marker;
+  ctx.fillText(txt, Math.min(x + 6, W - tw - 4), headerH + specH - 6);
+  ctx.font = '10px Roboto, "Segoe UI", sans-serif';
+  const sub = S.markerSub, sw = ctx.measureText(sub).width;
+  ctx.fillStyle = C.markerSub;
+  ctx.fillText(sub, Math.min(x + 6, W - sw - 4), headerH + specH - 6 - 14);
 }
 
-function colorFor(db, bot, span) {
-  let t = (db - bot) / span;
-  t = Math.max(0, Math.min(1, t));
-  return hslToRgb((240 - 240 * t) / 360, 0.95, 0.14 + 0.48 * t);
+// time-domain strip (live mode)
+if (!SWEEP) {
+  ctx.fillStyle = C.tdBg; ctx.fillRect(0, tdTop, W, tdH);
+  const td = [];
+  for (let i = 0; i < 64; i++) td.push(-48.4 + Math.sin(i * 0.55) * 1.1 + rnd(-0.7, 0.7));
+  let lo = Math.min(...td), hi = Math.max(...td);
+  if (hi - lo < 12) { const mid = (hi + lo) / 2; lo = mid - 6; hi = mid + 6; }
+  const slot = W / td.length;
+  ctx.fillStyle = C.tdBar;
+  for (let i = 0; i < td.length; i++) {
+    const t = Math.max(0, Math.min(1, (td[i] - lo) / (hi - lo)));
+    const bh = 1 + t * (tdH - 4);
+    ctx.fillRect(i * slot, tdTop + tdH - bh, Math.max(1, slot - 0.5), bh);
+  }
+  ctx.font = '10px Roboto, "Segoe UI", sans-serif';
+  ctx.fillStyle = C.tdLabel;
+  ctx.fillText(S.td, 6, tdTop + 12);
 }
 
-function hslToRgb(h, s, l) {
-  const f = (p, q, t) => {
-    if (t < 0) t += 1;
-    if (t > 1) t -= 1;
-    if (t < 1 / 6) return p + (q - p) * 6 * t;
-    if (t < 1 / 2) return q;
-    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-    return p;
-  };
-  let r, g, b;
-  if (s === 0) { r = g = b = l; }
-  else {
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    r = f(p, q, h + 1 / 3); g = f(p, q, h); b = f(p, q, h - 1 / 3);
-  }
-  return `rgb(${Math.round(r * 255)},${Math.round(g * 255)},${Math.round(b * 255)})`;
-}
-
-function draw(canvas, opt) {
-  const dpr = window.devicePixelRatio || 1;
-  const cssW = canvas.clientWidth, cssH = canvas.clientHeight;
-  canvas.width = Math.round(cssW * dpr);
-  canvas.height = Math.round(cssH * dpr);
-  const ctx = canvas.getContext('2d');
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const w = cssW, h = cssH;
-
-  ctx.fillStyle = '#0E1117';
-  ctx.fillRect(0, 0, w, h);
-
-  const headerH = 38;
-  const plotH = h - headerH;
-  const specH = Math.round(plotH * 0.46);
-  const tdH = opt.td ? Math.round(plotH * 0.13) : 0;
-  const barH = opt.bars ? Math.round(plotH * 0.08) : 0;
-  const rateH = opt.rates ? Math.round(plotH * 0.05) : 0;
-  const plotTop = headerH;
-  const tdTop = plotTop + specH + 2;
-  const barTop = tdTop + tdH;
-  const rateTop = barTop + barH;
-  const wfTop = rateTop + rateH + 2;
-  const wfH = h - wfTop;
-
-  // adaptive axis, anchored on the noise floor
-  const sortedAvg = [...opt.avg].sort((a, b) => a - b);
-  const floorDb = sortedAvg[Math.floor(sortedAvg.length * 0.2)];
-  const dbBot = floorDb - 15;
-  const dbTop = dbBot + 70;
-  const dbSpan = dbTop - dbBot;
-
-  const yFor = (db) => {
-    const t = Math.max(0, Math.min(1, (db - dbBot) / dbSpan));
-    return plotTop + specH - 4 - t * (specH - 8);
-  };
-  const n = opt.avg.length;
-  const xFor = (i) => w * i / (n - 1);
-
-  // grid + axis labels
-  ctx.strokeStyle = '#232A33';
-  ctx.lineWidth = 1;
-  ctx.font = '9px "Segoe UI", sans-serif';
-  ctx.textAlign = 'left';
-  for (let db = Math.ceil(dbBot / 20) * 20; db <= dbTop; db += 20) {
-    const y = yFor(db);
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-    ctx.fillStyle = '#6B7480';
-    ctx.fillText(String(db), 6, y - 2);
-  }
-
-  // peak hold fill + line
-  ctx.beginPath();
-  ctx.moveTo(0, plotTop + specH);
-  for (let i = 0; i < n; i++) ctx.lineTo(xFor(i), yFor(opt.peak[i]));
-  ctx.lineTo(w, plotTop + specH);
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(255,165,61,0.19)';
-  ctx.fill();
-
-  ctx.strokeStyle = '#FFA53D';
-  ctx.lineWidth = 1.2;
-  ctx.beginPath();
-  for (let i = 0; i < n; i++) {
-    const x = xFor(i), y = yFor(opt.peak[i]);
-    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-  }
-  ctx.stroke();
-
-  // average
-  ctx.strokeStyle = '#00C8FF';
-  ctx.lineWidth = 1.8;
-  ctx.beginPath();
-  for (let i = 0; i < n; i++) {
-    const x = xFor(i), y = yFor(opt.avg[i]);
-    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-  }
-  ctx.stroke();
-
-  // marker
-  if (opt.marker != null) {
-    const x = w * (opt.marker - opt.fLo) / (opt.fHi - opt.fLo);
-    ctx.strokeStyle = '#6EF0B0';
-    ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.moveTo(x, plotTop); ctx.lineTo(x, plotTop + specH); ctx.stroke();
-    const idx = Math.round((opt.marker - opt.fLo) / (opt.fHi - opt.fLo) * (n - 1));
-    const txt = `${opt.marker.toFixed(1)} MHz  ${opt.avg[idx].toFixed(1)} dBFS`;
-    ctx.font = '11px "Segoe UI", sans-serif';
-    const tw = ctx.measureText(txt).width;
-    ctx.fillStyle = '#6EF0B0';
-    ctx.fillText(txt, Math.min(x + 6, w - tw - 4), plotTop + specH - 6);
-  }
-
-  // time domain strip
-  if (opt.td) {
-    ctx.fillStyle = '#12161C';
-    ctx.fillRect(0, tdTop, w, tdH);
-    let lo = Math.min(...opt.td), hi = Math.max(...opt.td);
-    if (hi - lo < 12) { const mid = (hi + lo) / 2; lo = mid - 6; hi = mid + 6; }
-    const slot = w / opt.td.length;
-    ctx.fillStyle = '#00A0D2';
-    for (let i = 0; i < opt.td.length; i++) {
-      const t = Math.max(0, Math.min(1, (opt.td[i] - lo) / (hi - lo)));
-      const bh = 1 + t * (tdH - 4);
-      ctx.fillRect(i * slot, tdTop + tdH - bh, Math.max(1, slot - 0.5), bh);
+// per-channel activity + detection rates (sweep mode)
+if (SWEEP) {
+  const chans = [];
+  for (let i = 0; i < 36; i++) chans.push(5180 + i * 20);
+  const bars = [], rates = [];
+  for (const fc of chans) {
+    let best = -Infinity;
+    for (let i = 0; i < N; i++) {
+      const f = fLo + (fHi - fLo) * i / (N - 1);
+      if (Math.abs(f - fc) > 8) continue;
+      best = Math.max(best, peak[i]);
     }
-    ctx.font = '10px "Segoe UI", sans-serif';
-    ctx.fillStyle = '#8FA3B8';
-    ctx.fillText(`时域  ${lo.toFixed(1)} … ${hi.toFixed(1)} dBFS`, 6, tdTop + 12);
+    const v = Math.max(0, best - floorDb);
+    bars.push(v);
+    rates.push(Math.min(100, Math.max(0, Math.round((v - 6) * 7))));
   }
-
-  // channel activity
-  if (opt.bars) {
-    const slot = w / opt.bars.length;
-    for (let i = 0; i < opt.bars.length; i++) {
-      const t = Math.max(0, Math.min(1, opt.bars[i] / 30));
-      const bh = 1 + t * (barH - 2);
-      ctx.fillStyle = `hsl(${120 - 120 * t}, 90%, ${30 + 25 * t}%)`;
-      ctx.fillRect(i * slot + 0.5, barTop + barH - bh, slot - 1, bh);
+  const slot = W / bars.length;
+  for (let i = 0; i < bars.length; i++) {
+    const t = Math.min(1, Math.max(0, bars[i] / 30));
+    const bh = 1 + t * (barH - 2);
+    const rgb = hsv(120 - 120 * t, 0.9, 0.9);
+    ctx.fillStyle = `rgb(${rgb.join(',')})`;
+    ctx.fillRect(i * slot + 0.5, barTop + barH - bh, slot - 1, bh);
+  }
+  for (let i = 0; i < rates.length; i++) {
+    const t = rates[i] / 100;
+    const x0 = i * slot + 0.5, x1 = x0 + Math.max(1, slot - 1);
+    ctx.fillStyle = C.grid;
+    ctx.fillRect(x0, rateTop + 1, x1 - x0, rateH - 2);
+    if (t > 0) {
+      const rgb = hsv(200 - 200 * t, 0.85, 0.95);
+      ctx.fillStyle = `rgb(${rgb.join(',')})`;
+      ctx.fillRect(x0, rateTop + 1, (x1 - x0) * t, rateH - 2);
     }
   }
+}
 
-  // detection rate
-  if (opt.rates) {
-    const slot = w / opt.rates.length;
-    for (let i = 0; i < opt.rates.length; i++) {
-      const t = Math.max(0, Math.min(1, opt.rates[i] / 100));
-      const x0 = i * slot + 0.5, x1 = x0 + Math.max(1, slot - 1);
-      ctx.fillStyle = '#232A33';
-      ctx.fillRect(x0, rateTop + 1, x1 - x0, rateH - 2);
-      if (t > 0) {
-        ctx.fillStyle = `hsl(${200 - 200 * t}, 85%, 60%)`;
-        ctx.fillRect(x0, rateTop + 1, (x1 - x0) * t, rateH - 2);
-      }
-    }
-  }
-
-  // waterfall
-  const rows = 120, cellW = 2;
-  const cols = Math.ceil(w / cellW);
-  const img = ctx.createImageData(cols, rows);
+// waterfall: newest row on top, old rows fade out like the scrolling bitmap
+(function waterfall() {
+  const rows = 160;                                  // SpectrumView.wfRows
+  const off = document.createElement('canvas');
+  off.width = W; off.height = rows;
+  const octx = off.getContext('2d');
+  const img = octx.createImageData(W, rows);
   for (let r = 0; r < rows; r++) {
-    const fade = 1 - r / rows * 0.45;
-    for (let c = 0; c < cols; c++) {
-      const i = Math.min(n - 1, Math.round(c / (cols - 1) * (n - 1)));
-      const rgb = colorFor(opt.avg[i] + (Math.random() - 0.5) * 6 - 4, dbBot, dbSpan);
-      const m = rgb.match(/\d+/g);
-      const o = (r * cols + c) * 4;
-      img.data[o] = m[0] * fade;
-      img.data[o + 1] = m[1] * fade;
-      img.data[o + 2] = m[2] * fade;
+    const fade = 1 - (r / rows) * 0.55;
+    const drift = Math.sin(r * 0.21) * 2.2 + Math.sin(r * 0.07) * 1.4;
+    for (let c = 0; c < W; c++) {
+      const i = Math.min(N - 1, Math.round(c / (W - 1) * (N - 1)));
+      const rgb = colorFor(avg[i] + drift + rnd(-2.4, 2.4) - r * 0.04, dbBot, dbSpan);
+      const o = (r * W + c) * 4;
+      img.data[o] = rgb[0] * fade;
+      img.data[o + 1] = rgb[1] * fade;
+      img.data[o + 2] = rgb[2] * fade;
       img.data[o + 3] = 255;
     }
   }
-  const tmp = document.createElement('canvas');
-  tmp.width = cols; tmp.height = rows;
-  tmp.getContext('2d').putImageData(img, 0, 0);
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(tmp, 0, wfTop, w, wfH);
+  octx.putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(off, 0, wfTop, W, wfH);
+})();
 
-  // header labels
-  ctx.font = '11.5px "Segoe UI", sans-serif';
-  ctx.fillStyle = '#CBD2DC';
-  ctx.textAlign = 'left';
-  ctx.fillText(`${opt.band}   ${opt.fLo.toFixed(0)}`, 12, 18);
-  const right = `${opt.fHi.toFixed(0)} MHz`;
+// header: band / range / engine info / clipping
+ctx.font = '12px Roboto, "Segoe UI", sans-serif';
+ctx.fillStyle = C.label; ctx.textAlign = 'left';
+ctx.fillText(`${SWEEP ? '5 GHz' : '2.4 GHz'}   ${Math.round(fLo)}`, 12, 18);
+ctx.textAlign = 'right';
+ctx.fillText(`${Math.round(fHi)} MHz`, W - 12, 18);
+ctx.textAlign = 'left';
+ctx.font = '10px Roboto, "Segoe UI", sans-serif';
+ctx.fillStyle = C.tdLabel;
+ctx.fillText(SWEEP ? S.infoSweep : S.infoLive, 12, 33);
+if (SWEEP) {
+  ctx.fillStyle = C.warn;
   ctx.textAlign = 'right';
-  ctx.fillText(right, w - 12, 18);
+  ctx.fillText(S.clip, W - 12, 33);
   ctx.textAlign = 'left';
-  ctx.font = '10px "Segoe UI", sans-serif';
-  ctx.fillStyle = '#8FA3B8';
-  ctx.fillText(opt.info, 12, 33);
-  if (opt.clip >= 0.05) {
-    ctx.fillStyle = '#FF6B6B';
-    ctx.textAlign = 'right';
-    ctx.fillText(`削顶 ${opt.clip.toFixed(1)}%`, w - 12, 33);
-    ctx.textAlign = 'left';
-  }
 }
-
-const live = makeLive(420, 2397, 2477);
-const sweep = makeSweep(460, 5150, 5895);
-
-const bars = [];
-for (let i = 0; i < 36; i++) {
-  const fc = 5180 + i * 20;
-  let v = 2 + Math.random() * 3;
-  const strong = [[5240, 13], [5320, 13], [5560, 11], [5720, 10], [5805, 12]];
-  for (const [f, a] of strong) if (Math.abs(fc - f) < 12) v = a + Math.random() * 2;
-  bars.push(v);
-}
-const rates = bars.map((v) => Math.min(100, Math.max(0, (v - 3) * 9)));
-
-draw(document.getElementById('cv1'), {
-  fLo: 2397, fHi: 2477, band: '2.4 GHz',
-  avg: live.avg, peak: live.peak, marker: 2437,
-  info: '28.4 帧/秒   RMS -46.2 dBFS   4096 点/80 MS/s',
-  td: [-49.5, -47.2, -45.8, -46.4, -44.1, -45.0, -47.8, -46.3],
-  clip: 0,
-});
-
-draw(document.getElementById('cv2'), {
-  fLo: 5150, fHi: 5895, band: '5 GHz',
-  avg: sweep.avg, peak: sweep.peak, marker: null,
-  info: '扫描 1.68 s   39 步   底噪 -89.4 dBFS   检出率最高：ch64 100%',
-  bars: bars, rates: rates, clip: 0.3,
-});
 </script>
 </body>
 </html>
