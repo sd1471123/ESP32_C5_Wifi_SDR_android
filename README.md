@@ -34,6 +34,56 @@ channel" and "best detection" summaries in the top bar, waterfall stitching the 
 中文界面截图见 [README.zh-CN.md](README.zh-CN.md)。`docs/ui-mockup.html` is still there
 as a pixel-accurate layout mockup.
 
+## Interface
+
+![Numbered interface guide](docs/ui-guide.png)
+
+The mock-up shows **sweep mode with the demo source**, where every panel is populated at once;
+live mode simply drops rows 22–23. The left rail scrolls, so the numbers cover its top part only.
+
+### Left rail
+
+| # | Control | What it does |
+| --- | --- | --- |
+| 1 | Mode | `Live 2.4G` / `Live 5G` / `Sweep 2.4G` / `Sweep 5G`. Live streams a single centre frequency; sweep walks the band in 20 MHz steps and stitches the passes. |
+| 2 | Source | `USB device` (real board) or `Demo` (synthesised band — the whole UI works without hardware). |
+| 3 | Sample rate | 80 / 40 / 20 / 10 / 8 / 4 MS/s. Wider sees more at once but costs USB bandwidth. |
+| 4 | Bit depth | 8 or 10-bit IQ. 10-bit buys dynamic range at half the bandwidth. |
+| 5 | DC | Removes the DC spike before the FFT. Keep it on when the board leaks its LO. |
+| 6 | Capture | `IQ stream` — raw samples, FFT on the phone, time-domain strip included; `On-chip spectrum` — the chip's own FFT, lighter over USB, no time domain. |
+| 7 | Waterfall | Row rate: every frame / 2 / 4 frames. Slower rows make the waterfall easier to read. |
+| 8 | FFT | 256 / 512 / 1024 / 2048 bins. More bins = finer frequency detail, slower refresh. |
+| 9 | Bandwidth | Displayed span (max / 48 / 24 / 12 MHz). Zoom only — it does not change the capture. |
+
+### Top bar
+
+| # | Element | What it does |
+| --- | --- | --- |
+| 10 | Title | App name. |
+| 11 | Clock · battery | Battery shows ⚡ while charging. |
+| 12 | Status line | In sweep mode: `busiest: ch76 5880MHz +2 dB`. In live mode: frame rate, RMS and sample count. Frozen while paused. |
+| 13 | Clear ✕ | Drops the peak-hold trace and the waterfall history. |
+| 14 | Pause ❚❚ | Stops the capture loop itself — spectrum, waterfall and the status line all freeze; tapping again continues the sweep where it stopped. |
+| 15 | Connect / Disconnect | Opens or releases the USB link to the board. |
+
+### Chart panel
+
+| # | Element | What it does |
+| --- | --- | --- |
+| 16 | Panel header | Band, centre frequency and sweep progress on the left; display ceiling and peak frequency on the right. |
+| 17 | dB axis | Power scale, driven by the noise-floor and span settings. |
+| 18 | Spectrum trace | Cyan = average, orange dashes = peak hold. |
+| 19 | Marker readout | Tap the spectrum to drop a marker: channel, frequency, level and bandwidth at that point. |
+| 20 | Time-domain strip | Block power per capture (dBFS) — good for spotting bursts and duty cycle. Live mode only. |
+| 21 | Channel numbers | The 20 MHz channel in each slot, shared by rows 22 and 23. |
+| 22 | Channel activity | How far each channel sits above the noise floor, 0–30 dB mapped to bar height, green → red. Refreshed every sweep. |
+| 23 | Detection rate | Share of sweeps in which that channel was judged occupied (≥ 12 dB above the floor), averaged over the session. |
+| 24 | Waterfall | Spectrum history over time, brighter = stronger. Drag the divider above it to change the split. |
+
+Rows 22 and 23 answer different questions: 22 is *how strong right now*, 23 is *how consistently
+occupied*. High 22 + high 23 = a steady AP; high 22 + low 23 = something intermittent; low 22 +
+high 23 = a weak but constant signal from far away.
+
 ## Related projects
 
 | Part | Repository | What it is |
