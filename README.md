@@ -36,7 +36,7 @@ as a pixel-accurate layout mockup.
 
 ## Interface
 
-![Numbered interface guide](docs/ui-guide.png)
+![Numbered interface guide](docs/ui-guide-en.png)
 
 The mock-up shows **sweep mode with the demo source**, where every panel is populated at once;
 live mode simply drops rows 22–23. The left rail scrolls, so the numbers cover its top part only.
@@ -83,6 +83,8 @@ live mode simply drops rows 22–23. The left rail scrolls, so the numbers cover
 Rows 22 and 23 answer different questions: 22 is *how strong right now*, 23 is *how consistently
 occupied*. High 22 + high 23 = a steady AP; high 22 + low 23 = something intermittent; low 22 +
 high 23 = a weak but constant signal from far away.
+
+The Chinese version of this guide is in [README.zh-CN.md](README.zh-CN.md).
 
 ## Related projects
 
