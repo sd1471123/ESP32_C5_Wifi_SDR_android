@@ -37,6 +37,8 @@ class DemoEngine(
     /** The synthetic source always produces full-scale floats, so this is stored but unused. */
     @Volatile override var iqBits: Int = 8
 
+    @Volatile override var dcRemove: Boolean = true
+
     @Volatile override var recorder: IqRecorder? = null
 
     @Volatile private var running = true

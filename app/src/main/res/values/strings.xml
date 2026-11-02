@@ -110,6 +110,13 @@
     <string name="bits_8">8 bit</string>
     <string name="bits_10">10 bit</string>
     <string name="status_bits">I/Q: %1$d bit</string>
+    <string name="dc_row">DC</string>
+    <string name="dc_on">Remove</string>
+    <string name="dc_off">Keep</string>
+    <string name="gpio_title">GPIO</string>
+    <string name="gpio_open">Z/0/1</string>
+    <string name="gpio_none">Board does not expose GPIO</string>
+    <string name="done">Done</string>
 
     <string-array name="modes">
         <item>Live 2.4G</item>

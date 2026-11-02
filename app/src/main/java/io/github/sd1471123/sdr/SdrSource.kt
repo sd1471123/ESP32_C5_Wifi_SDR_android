@@ -21,6 +21,9 @@ interface SdrSource {
     /** Wire format: 8 = CAP16 signed bytes, 10 = CAP20 packed 10-bit (demo engine ignores it). */
     var iqBits: Int
 
+    /** Remove the per-frame windowed DC before the FFT; off leaves the LO leak at bin 0. */
+    var dcRemove: Boolean
+
     /** Set to a recorder to stream every capture to disk; null stops recording. */
     var recorder: IqRecorder?
 

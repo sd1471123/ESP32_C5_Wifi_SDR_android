@@ -110,6 +110,13 @@
     <string name="bits_8">8 位</string>
     <string name="bits_10">10 位</string>
     <string name="status_bits">I/Q 位数：%1$d bit</string>
+    <string name="dc_row">直流</string>
+    <string name="dc_on">去除</string>
+    <string name="dc_off">保留</string>
+    <string name="gpio_title">GPIO</string>
+    <string name="gpio_open">Z/0/1</string>
+    <string name="gpio_none">板子不支持 GPIO</string>
+    <string name="done">完成</string>
 
     <string-array name="modes">
         <item>实时 2.4G</item>

@@ -143,6 +143,15 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
     /** null selects the hardware AGC, otherwise the manual PHY gain index (0..79, see LIMITS?). */
     fun setGain(manual: Int?) = cmd(if (manual == null) "GAIN HARDWARE" else "GAIN MANUAL ${manual.coerceIn(0, 79)}")
 
+    /** Number of controllable GPIO pins (GPIO? → "OK GPIO <n>"), or null when unsupported. */
+    fun gpioPins(): Int? {
+        val r = cmd("GPIO?")
+        return Regex("GPIO (\\d+)").find(r)?.groupValues?.get(1)?.toInt()
+    }
+
+    /** Drive one pin: 'Z' high impedance, '0' low, '1' high. */
+    fun setGpio(pin: Int, state: Char) = cmd("GPIO $pin $state")
+
     /**
      * Capture [n] complex samples as interleaved floats (I, Q, I, Q ...) scaled to full
      * scale 1.0. [rateIdx] 0..5 selects 80/40/20/10/8/4 MS/s. [bits] 8 uses CAP16 with

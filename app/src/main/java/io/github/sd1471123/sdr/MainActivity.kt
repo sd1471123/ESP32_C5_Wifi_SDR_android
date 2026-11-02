@@ -16,6 +16,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.Gravity
 import android.view.View
 import android.view.WindowInsets
 import android.view.WindowInsetsController
@@ -24,6 +25,8 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
@@ -70,6 +73,7 @@ class MainActivity : Activity() {
     private lateinit var txtBattery: TextView
     private lateinit var btnUpdate: Button
     private lateinit var btnPause: Button
+    private lateinit var btnGpio: Button
     private lateinit var chkAgc: CheckBox
 
     /** True freezes the display; captures and recording keep running underneath. */
@@ -163,7 +167,9 @@ class MainActivity : Activity() {
         txtRecord = findViewById(R.id.txtRecord)
         txtBattery = findViewById(R.id.txtBattery)
         btnUpdate = findViewById(R.id.btnUpdate)
+        btnGpio = findViewById(R.id.btnGpio)
         btnRecord.isEnabled = false
+        btnGpio.isEnabled = false
 
         usb = getSystemService(Context.USB_SERVICE) as UsbManager
         registerUsbReceiver()
@@ -191,6 +197,7 @@ class MainActivity : Activity() {
         findViewById<TextView>(R.id.txtAuthor).setOnClickListener { openProjectPage() }
         btnUpdate.setOnClickListener { checkForUpdates() }
         spectrum.onTune = { freq -> tuneTo(freq) }
+        spectrum.onEdgeRetune = { delta -> edgeRetune(delta) }
         seekGain.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(bar: SeekBar, value: Int, fromUser: Boolean) {
                 txtGain.text = value.toString()
@@ -366,6 +373,13 @@ class MainActivity : Activity() {
             engine?.iqBits = if (pos == 1) 10 else 8
             if (engine != null) status(getString(R.string.status_bits, if (pos == 1) 10 else 8))
         }
+
+        // per-frame DC removal; off keeps the LO leak visible at bin 0
+        spinner(R.id.spDc, arrayOf(getString(R.string.dc_on), getString(R.string.dc_off))).onPick { pos ->
+            engine?.dcRemove = pos == 0
+        }
+
+        findViewById<Button>(R.id.btnGpio).setOnClickListener { showGpioDialog() }
 
         rebuildPresets()
     }
@@ -584,6 +598,80 @@ class MainActivity : Activity() {
         status(getString(R.string.status_tuned, mhz))
     }
 
+    /** Dragging the spectrum past a band edge walks the centre by one capture window. */
+    private fun edgeRetune(deltaMhz: Float) {
+        if (currentMode != Mode.LIVE) return
+        val target = parseFreq() + Math.round(deltaMhz)
+        val lo = if (currentBand == Bands.GHZ24) 2400 else 5150
+        val hi = if (currentBand == Bands.GHZ24) 2500 else 5895
+        if (target - 40 < lo || target + 40 > hi) return
+        tuneTo(target.toFloat())
+    }
+
+    /** Asks the board how many GPIO pins it drives, then shows the Z/0/1 panel. */
+    private fun showGpioDialog() {
+        val d = dev ?: return
+        Thread {
+            try {
+                val pins = d.gpioPins()
+                    ?: run { main.post { toast(getString(R.string.gpio_none)) }; return@Thread }
+                main.post { showGpioPanel(d, pins) }
+            } catch (t: Throwable) {
+                main.post { toast(t.message ?: "GPIO error") }
+            }
+        }.start()
+    }
+
+    private fun showGpioPanel(d: Espsdr, pins: Int) {
+        val states = CharArray(pins) { 'Z' }
+        val names = arrayOf("Z", "0", "1")
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding((28 * resources.displayMetrics.density).toInt(), 8, 28, 8)
+        }
+        for (p in 0 until pins) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+            }
+            row.addView(TextView(this).apply {
+                text = "GPIO $p"
+                setPadding(0, (10 * resources.displayMetrics.density).toInt(), 24, 0)
+            })
+            val btn = Button(this).apply {
+                text = "Z"
+                setOnClickListener {
+                    states[p] = when (states[p]) {
+                        'Z' -> '0'
+                        '0' -> '1'
+                        else -> 'Z'
+                    }
+                    text = names[when (states[p]) { 'Z' -> 0; '0' -> 1; else -> 2 }]
+                    val pin = p
+                    val state = states[p]
+                    Thread {
+                        try {
+                            d.setGpio(pin, state)
+                        } catch (t: Throwable) {
+                            main.post { toast(t.message ?: "GPIO error") }
+                        }
+                    }.start()
+                }
+            }
+            row.addView(btn)
+            box.addView(row)
+        }
+        val scroll = ScrollView(this).apply { addView(box) }
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.gpio_title))
+            .setView(scroll)
+            .setPositiveButton(R.string.done, null)
+            .show()
+    }
+
+    private fun toast(text: String) =
+        Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
+
     // ---- connection -------------------------------------------------------
     private fun connect() {
         if (demoSource) {
@@ -630,6 +718,7 @@ class MainActivity : Activity() {
                     engine = e
                     btnConnect.setText(R.string.disconnect)
                     btnRecord.isEnabled = true
+                    btnGpio.isEnabled = true
                     val info = if (d.buildDate.isEmpty()) d.info else "${d.info} · ${d.buildDate}"
                     status(getString(R.string.status_connected, info))
                 }
@@ -777,6 +866,7 @@ class MainActivity : Activity() {
         rec?.close()
         btnRecord.setText(R.string.record)
         btnRecord.isEnabled = false
+        btnGpio.isEnabled = false
         txtRecord.text = ""
         engine?.stopEngine()
         engine = null

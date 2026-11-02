@@ -43,6 +43,9 @@ class SdrEngine(
     /** Wire format of the capture: 8 = CAP16 signed bytes, 10 = CAP20 packed 10-bit. */
     @Volatile override var iqBits: Int = 8
 
+    /** Per-frame windowed DC removal before the FFT. */
+    @Volatile override var dcRemove: Boolean = true
+
     /** Set to a recorder to stream every capture to disk; null stops recording. */
     @Volatile override var recorder: IqRecorder? = null
 
@@ -108,7 +111,7 @@ class SdrEngine(
 
         val iq = dev.capture(nsamp, rateIdx, iqBits)
         pump(iq)
-        val s = Dsp.spectra(iq, nfft, true)
+        val s = Dsp.spectra(iq, nfft, dcRemove)
         val fsMhz = RATES[rateIdx] / 1e6f
         val fLo = lo - fsMhz / 2f
         val fHi = lo + fsMhz / 2f
@@ -206,7 +209,7 @@ class SdrEngine(
 
         val iq = dev.capture(nsamp, 0)
         pump(iq)
-        val sp = Dsp.spectra(iq, nfft, true)
+        val sp = Dsp.spectra(iq, nfft, dcRemove)
         s.clipPct = sp.clipPct
         for (j in 0 until nfft) {
             if (!s.sel[j]) continue

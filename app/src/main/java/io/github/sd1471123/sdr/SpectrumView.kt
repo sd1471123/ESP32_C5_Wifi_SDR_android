@@ -74,6 +74,14 @@ class SpectrumView @JvmOverloads constructor(
     var smoothing = 0f
     private var smooth: FloatArray? = null
 
+    /** Spectrum plot share of the drawable height; draggable, persisted between runs. */
+    private var specFrac: Float
+    private var draggingSplit = false
+
+    /** Invoked with ±(one capture window) when the user keeps panning against a band edge. */
+    var onEdgeRetune: ((Float) -> Unit)? = null
+    private var edgeAccum = 0f
+
     private var wf: Bitmap? = null
     private var wfPix: IntArray? = null
 
@@ -136,6 +144,17 @@ class SpectrumView @JvmOverloads constructor(
     }
     private val hintBg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.argb(232, 18, 23, 30)
+    }
+    private val splitLine = Paint().apply { color = Color.rgb(60, 70, 85) }
+
+    init {
+        val prefs = context.getSharedPreferences("sdr_prefs", Context.MODE_PRIVATE)
+        specFrac = prefs.getFloat("spec_frac", 0.46f).coerceIn(0.25f, 0.65f)
+    }
+
+    private fun saveSpecFrac() {
+        context.getSharedPreferences("sdr_prefs", Context.MODE_PRIVATE)
+            .edit().putFloat("spec_frac", specFrac).apply()
     }
 
     private fun sp(value: Float): Float =
@@ -287,9 +306,46 @@ class SpectrumView @JvmOverloads constructor(
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (splitDrag(event)) return true
         scaleDetector.onTouchEvent(event)
         if (!scaleDetector.isInProgress) gestureDetector.onTouchEvent(event)
         return true
+    }
+
+    // ---- split drag -------------------------------------------------------
+    private fun headerHeight(): Int =
+        (38f * resources.displayMetrics.density).toInt()
+
+    private fun panelSplitY(): Float =
+        headerHeight() + (height - headerHeight()) * specFrac + 2f
+
+    /**
+     * A horizontal grab zone around the spectrum/waterfall boundary resizes the split. Returning
+     * true swallows the event so the pan/pinch/tune gestures underneath stay quiet.
+     */
+    private fun splitDrag(event: MotionEvent): Boolean {
+        val grab = 12f * resources.displayMetrics.density
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                draggingSplit = kotlin.math.abs(event.y - panelSplitY()) <= grab
+                return draggingSplit
+            }
+            MotionEvent.ACTION_MOVE -> if (draggingSplit) {
+                val frac = ((event.y - headerHeight()) / (height - headerHeight()))
+                    .coerceIn(0.25f, 0.65f)
+                if (kotlin.math.abs(frac - specFrac) > 0.004f) {
+                    specFrac = frac
+                    invalidate()
+                }
+                return true
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> if (draggingSplit) {
+                draggingSplit = false
+                saveSpecFrac()
+                return true
+            }
+        }
+        return false
     }
 
     // ---- view window ------------------------------------------------------
@@ -310,9 +366,22 @@ class SpectrumView @JvmOverloads constructor(
     }
 
     private fun panBy(deltaMhz: Float) {
+        val oldLo = viewFlo
         viewFlo += deltaMhz
         viewFhi += deltaMhz
         clampWindow()
+        // Panning against a band edge accumulates the blocked motion; one full capture window
+        // worth of it retunes the receiver so the sweep continues on the neighbouring range.
+        val blocked = deltaMhz - (viewFlo - oldLo)
+        val dataSpan = dataFhi - dataFlo
+        if (dataSpan > 0f) {
+            edgeAccum += blocked
+            if (kotlin.math.abs(edgeAccum) >= dataSpan) {
+                val delta = dataSpan * kotlin.math.sign(edgeAccum)
+                edgeAccum *= 0.4f
+                onEdgeRetune?.invoke(delta)
+            }
+        }
         invalidate()
     }
 
@@ -343,7 +412,7 @@ class SpectrumView @JvmOverloads constructor(
         // Header band: band / range / info, so the labels never sit on top of the dB grid.
         val headerH = (38f * resources.displayMetrics.density).toInt()
         val plotH = h - headerH
-        val specH = (plotH * 0.46f).toInt()
+        val specH = (plotH * specFrac).toInt()
         val tdH = if (td != null) (plotH * 0.13f).toInt() else 0
         val barH = if (bars != null) (plotH * 0.08f).toInt() else 0
         val rateH = if (rates != null) (plotH * 0.05f).toInt() else 0
@@ -359,6 +428,9 @@ class SpectrumView @JvmOverloads constructor(
         drawBars(canvas, w, barTop, barH)
         drawRates(canvas, w, rateTop, rateH)
         if (wfH > 0) drawWaterfall(canvas, w, wfTop, wfH)
+        // the grab handle: a subtle line at the spectrum/waterfall boundary
+        val sy = panelSplitY()
+        canvas.drawRect(0f, sy - 1.5f, w.toFloat(), sy + 1.5f, splitLine)
         drawLabels(canvas, w)
         if (avg == null) drawEmptyHint(canvas, w, h)
         canvas.restore()
