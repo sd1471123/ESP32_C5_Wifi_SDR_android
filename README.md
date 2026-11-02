@@ -110,7 +110,7 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 | Channel presets with the full centre frequency (`ch6 2437·20M`): every 20 MHz channel, plus the 40/80 MHz groupings used by 5 GHz APs | ✅ |
 | ◀ ▶ buttons under the preset box step to the previous / next channel, wrapping at both ends | ✅ |
 | Per-20 MHz-channel activity strip + "busiest channel" readout | ✅ |
-| Detection rate per channel (% of finished sweeps 6 dB above the noise floor) | ✅ |
+| Detection rate per channel (% of finished sweeps with the channel peak >12 dB above the noise floor, matching the desktop app) | ✅ |
 | Time-domain strip in live mode (block power per FFT frame) | ✅ |
 | Clipping statistic (share of I/Q samples at full scale) with a warning | ✅ |
 | Frame rate / RMS / sample throughput (kS/s) readout | ✅ |

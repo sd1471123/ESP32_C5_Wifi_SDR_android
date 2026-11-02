@@ -523,7 +523,7 @@ class MainActivity : Activity() {
         }
         val rates = frame.rates
         if (rates != null) {
-            val top = topDetected(rates, frame.band)
+            val top = topDetected(rates, bars, frame.band)
             if (top.isNotEmpty()) parts.add(top)
         }
         if (frame.clipPct >= 0.5f) parts.add(getString(R.string.clip_pct, frame.clipPct))
@@ -547,12 +547,20 @@ class MainActivity : Activity() {
         return getString(R.string.busiest, top)
     }
 
-    private fun topDetected(rates: FloatArray, band: String): String {
+    /**
+     * Channel with the best detection rate; equal rates are broken by signal strength, so a
+     * broad noise floor does not pin the readout on the first channel of the band.
+     */
+    private fun topDetected(rates: FloatArray, bars: FloatArray?, band: String): String {
         val chans = Bands.channels20(band)
         val n = minOf(rates.size, chans.size)
         if (n == 0) return ""
         var best = 0
-        for (i in 1 until n) if (rates[i] > rates[best]) best = i
+        for (i in 1 until n) {
+            if (rates[i] > rates[best] ||
+                (rates[i] == rates[best] && bars != null && i < bars.size && bars[i] > bars[best])
+            ) best = i
+        }
         if (rates[best] < 1f) return ""
         val ch = Bands.channelNumber(chans[best].toFloat())
         return getString(R.string.top_detected, ch, "%.0f".format(rates[best]))
@@ -879,7 +887,7 @@ class MainActivity : Activity() {
     private fun endUpdate() {
         updateBusy = false
         btnUpdate.isEnabled = true
-        btnUpdate.setText(R.string.update_icon)
+        btnUpdate.setText(R.string.rail_update)
     }
 
     /** Results go to a toast as well: the status line is overwritten by the live spectrum. */

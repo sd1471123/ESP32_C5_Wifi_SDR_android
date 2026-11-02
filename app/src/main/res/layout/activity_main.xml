@@ -63,30 +63,6 @@
             android:layout_centerVertical="true"
             android:text="@string/connect" />
 
-        <Button
-            android:id="@+id/btnRecord"
-            style="@style/SdrButton.Compact"
-            android:layout_width="wrap_content"
-            android:layout_height="24dp"
-            android:layout_centerVertical="true"
-            android:layout_marginEnd="6dp"
-            android:layout_toStartOf="@id/btnConnect"
-            android:text="@string/record" />
-
-        <!-- self-update: always visible, unlike the bottom of the scrollable rail -->
-        <Button
-            android:id="@+id/btnUpdate"
-            style="@style/SdrButton.Compact"
-            android:layout_width="30dp"
-            android:layout_height="24dp"
-            android:layout_centerVertical="true"
-            android:layout_marginEnd="6dp"
-            android:layout_toStartOf="@id/btnRecord"
-            android:paddingStart="0dp"
-            android:paddingEnd="0dp"
-            android:text="@string/update_icon"
-            android:textSize="13sp" />
-
         <!-- pause freezes the picture, clear wipes every trace -->
         <Button
             android:id="@+id/btnPause"
@@ -95,7 +71,7 @@
             android:layout_height="24dp"
             android:layout_centerVertical="true"
             android:layout_marginEnd="6dp"
-            android:layout_toStartOf="@id/btnUpdate"
+            android:layout_toStartOf="@id/btnConnect"
             android:paddingStart="0dp"
             android:paddingEnd="0dp"
             android:text="@string/pause_icon"
@@ -147,12 +123,19 @@
         android:layout_weight="1"
         android:orientation="horizontal">
 
-        <ScrollView
+        <!-- the rail: scrollable options + a fixed row for update / record -->
+        <LinearLayout
             android:layout_width="140dp"
             android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:fillViewport="true"
-            android:scrollbars="none">
+            android:orientation="vertical">
+
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipToPadding="false"
+                android:fillViewport="true"
+                android:scrollbars="none">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -680,7 +663,38 @@
                     android:textColor="@color/text_dim"
                     android:textSize="8sp" />
             </LinearLayout>
-        </ScrollView>
+            </ScrollView>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnUpdate"
+                    style="@style/SdrButton.Compact"
+                    android:layout_width="0dp"
+                    android:layout_height="28dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/rail_update"
+                    android:textSize="10sp" />
+
+                <Button
+                    android:id="@+id/btnRecord"
+                    style="@style/SdrButton.Compact"
+                    android:layout_width="0dp"
+                    android:layout_height="28dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="@string/rail_record"
+                    android:textSize="10sp" />
+            </LinearLayout>
+        </LinearLayout>
 
         <io.github.sd1471123.sdr.SpectrumView
             android:id="@+id/spectrum"

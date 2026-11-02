@@ -392,8 +392,14 @@ class SdrEngine(
         val RATES = intArrayOf(80_000_000, 40_000_000, 20_000_000, 10_000_000, 8_000_000, 4_000_000)
         const val SWEEP_STEP_MHZ = 20
 
-        /** A channel counts as "detected" from this much above the noise floor. */
-        const val DETECT_DB = 6f
+        /**
+         * A channel counts as "detected" from this much above the noise floor. The bars are
+         * frame-peak statistics while the floor is a mean-based percentile, so quiet channels
+         * sit around 10-15 dB purely from noise fluctuation - 6 dB read 100 % everywhere and
+         * the "best detection" readout was stuck on the first channel. Matches the desktop
+         * app's `act > 12` (sdr_app.py draw_occupancy).
+         */
+        const val DETECT_DB = 12f
 
         /** Peak hold falls by this much after every finished sweep (~1 dB/s). */
         private const val PEAK_DECAY_DB = 2f

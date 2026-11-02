@@ -28,6 +28,8 @@
     <string name="disconnect">断开连接</string>
     <string name="record">录制 I/Q</string>
     <string name="stop_record">停止录制</string>
+    <string name="rail_record">录制 I/Q</string>
+    <string name="rail_update">检查更新</string>
     <string name="status_idle">未连接：把板子的 USB 口接到手机（OTG），然后点“连接设备”</string>
 
     <!-- 状态栏 -->
