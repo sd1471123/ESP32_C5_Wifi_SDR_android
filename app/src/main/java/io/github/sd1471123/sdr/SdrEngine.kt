@@ -128,6 +128,7 @@ class SdrEngine(
 
     /** The classic path: burst I/Q capture, analysed by the phone. */
     private fun captureFrame(): SdrFrame {
+        dev.flushQueued()   // LED / buzzer updates ride along between two captures
         val lo = centerMhz + loOffsetMhz
         if (lo != appliedFreq) {
             dev.setFreq(lo)
@@ -157,8 +158,21 @@ class SdrEngine(
     private var specBroken = false
     private var lastSpec: SdrFrame? = null
 
+    /** When the side commands last got their window, so the stream restart cannot run away. */
+    private var sideFlushedAt = 0L
+
     private fun specStep(): SdrFrame {
         val lo = centerMhz + loOffsetMhz
+        // The stream owns the wire until it is stopped, so a queued LED/buzzer/pin write can only
+        // go out across a restart. This path never called flushQueued at all, which silently
+        // dropped every side command while the chip streamed. Restarting costs a frame or two, so
+        // let the queue in a few times a second rather than on every pass.
+        if (specUp && dev.hasPending && System.currentTimeMillis() - sideFlushedAt >= SIDE_FLUSH_MS) {
+            sideFlushedAt = System.currentTimeMillis()
+            dev.stopSpec()
+            specUp = false
+            dev.flushQueued()
+        }
         // SPEC maxes out at 2048 points and a restart is the only way to apply
         // freq/gain/bandwidth/rate changes, because the chip streams until told to stop.
         val n = Integer.highestOneBit(nfft.coerceIn(256, 2048))
@@ -303,6 +317,7 @@ class SdrEngine(
     }
 
     private fun sweepStep(s: Sweep): SdrFrame {
+        dev.flushQueued()   // LED / buzzer updates ride along between two steps
         applyGainAndBandwidth()
         val lo = s.los[s.i]
         dev.setFreq(lo)
@@ -417,6 +432,9 @@ class SdrEngine(
 
         /** Peak hold falls by this much after every finished sweep (~1 dB/s). */
         private const val PEAK_DECAY_DB = 2f
+
+        /** Shortest gap between two stream restarts made to deliver queued side commands (ms). */
+        private const val SIDE_FLUSH_MS = 300L
 
         private val SWEEP_WIN_MHZ = floatArrayOf(10f, 20f)
     }

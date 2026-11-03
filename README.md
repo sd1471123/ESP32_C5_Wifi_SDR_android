@@ -91,7 +91,7 @@ re-export the PNG with a headless browser.
 
 | Part | Repository | What it is |
 | --- | --- | --- |
-| **Firmware** | [ESPARGOS/esp-sdr](https://github.com/ESPARGOS/esp-sdr) | ESP-SDR firmware that turns the ESP32 family into a low-duty-cycle SDR. **The ESP32-C5 board must be flashed with this before the app can talk to it.** |
+| **Firmware** | [sd1471123/esp-sdr](https://github.com/sd1471123/esp-sdr) | **Recommended:** my fork of [ESPARGOS/esp-sdr](https://github.com/ESPARGOS/esp-sdr), with the ESP32-C5 build this app is developed against — status LED, buzzer and spare-GPIO control included. **The C5 board must be flashed with this before the app can talk to it.** |
 | **Desktop host** | [sd1471123/ESP32_C5_Wifi_spectrum_analyzer](https://github.com/sd1471123/ESP32_C5_Wifi_spectrum_analyzer) | Python/Qt desktop client for the same firmware — the reference implementation of the protocol, band plans and DSP this app mirrors |
 | **Android client** | this repository | Phone-side UI: USB-OTG capture, spectrum + waterfall, channel analysis, I/Q recording |
 
@@ -134,7 +134,9 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 
 ## Hardware
 
-- ESP32-C5 board flashed with the [ESP-SDR](https://github.com/ESPARGOS/esp-sdr) firmware.
+- ESP32-C5 board flashed with the [esp-sdr](https://github.com/sd1471123/esp-sdr) firmware —
+  recommended, my own fork; the upstream [ESPARGOS/esp-sdr](https://github.com/ESPARGOS/esp-sdr)
+  works too.
   The desktop project's `flash_c5.py` is one convenient way to flash it; `idf.py flash` works too.
 - Connect the board's **"USB" port (native USB Serial/JTAG)** to the phone with an OTG adapter.
 - **Power**: the radio draws current spikes at start-up and a phone's OTG port often cannot

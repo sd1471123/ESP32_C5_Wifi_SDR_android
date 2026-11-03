@@ -74,6 +74,11 @@
     <string name="cfg_reset_done">已恢复默认参数</string>
     <string name="cfg_cancel">取消</string>
 
+    <!-- 前台采集连接 -->
+    <string name="keepalive_channel">采集连接</string>
+    <string name="keepalive_title">C5-SDR 正在采集</string>
+    <string name="keepalive_text">应用切到后台时保持 USB 连接不中断。</string>
+
     <!-- 检查更新 -->
     <string name="update_check">检查更新</string>
     <string name="update_icon">⟳</string>
@@ -137,8 +142,74 @@
     <string name="status_cap_off">频谱：主机 FFT</string>
     <string name="status_spec_fail">片上频谱不可用，已回退主机 FFT：%1$s</string>
     <string name="gpio_title">GPIO</string>
+
+    <!-- GPIO 二级菜单：引脚电平、状态灯、蜂鸣器 -->
+    <string name="gpio_menu_pins">引脚电平（Z / 0 / 1）</string>
+    <string name="gpio_menu_led">状态指示灯 LED</string>
+    <string name="gpio_menu_beep">蜂鸣器</string>
+    <string name="gpio_pins_sub">逐脚设置高阻 / 低 / 高</string>
+    <string name="gpio_led_sub">GPIO %1$d · RGB %2$d/%3$d/%4$d · %5$d%%</string>
+    <string name="gpio_beep_sub">GPIO %1$d · %2$s · %3$s · %4$d 个信道</string>
+    <string name="gpio_save">保存</string>
+    <string name="gpio_reset">恢复默认</string>
+    <string name="gpio_saved">设置已保存并重新下发到板子</string>
+    <string name="cancel">取消</string>
+    <string name="gpio_reset_done">已恢复默认设置</string>
+    <string name="apply">应用</string>
+    <string name="side_need_device">请先连接设备</string>
+    <string name="side_unsupported">固件不支持该功能，请更新板子固件</string>
+
+    <string name="led_pin">LED 端口</string>
+    <string name="led_red">红</string>
+    <string name="led_green">绿</string>
+    <string name="led_blue">蓝</string>
+    <string name="led_bright">亮度（%）</string>
+    <string name="led_off">关灯</string>
+    <string name="led_applied">LED %1$d %2$d %3$d</string>
+    <string name="led_mode">颜色来源</string>
+    <string name="led_mode_fixed">固定颜色</string>
+    <string name="led_mode_auto">跟随干扰</string>
+    <string name="led_auto_applied">指示灯跟随干扰强度</string>
+    <string name="led_stages">阶段颜色</string>
+    <string name="led_stage_range">第 %1$d 档 · %2$d–%3$d%%</string>
+    <string name="led_stages_applied">阶段颜色已保存</string>
+    <string name="led_stages_reset">默认渐变</string>
+    <string name="gpio_led_auto_sub">GPIO %1$d · 跟随干扰 %2$d 档</string>
+
+    <string name="beep_pin">蜂鸣器端口</string>
+    <string name="beep_freq">音调（Hz）</string>
+    <string name="beep_type">蜂鸣器类型</string>
+    <string name="beep_type_passive">无源（方波）</string>
+    <string name="beep_type_active">有源（PWM）</string>
+    <string name="beep_type_active_short">有源</string>
+    <string name="beep_tone">%1$d Hz</string>
+    <string name="beep_condition">触发条件</string>
+    <string name="beep_cond_activity">信道活动条变红</string>
+    <string name="beep_cond_rate">信道检出率条变红</string>
+    <string name="beep_max">最大音量（%）</string>
+    <string name="beep_channels">绑定信道（最多 10 个）</string>
+    <string name="beep_chan">信道 %1$d</string>
+    <string name="beep_channels_limit">最多只能选 %1$d 个信道</string>
+    <string name="beep_saved">蜂鸣器已保存：绑定 %1$d 个信道</string>
+    <string name="beep_test">测试</string>
+    <string name="beep_pattern">报警节拍</string>
+    <string name="beep_pattern_on">启用响-停节拍（关闭则持续长鸣）</string>
+    <string name="beep_on_ms">每次响（ms）</string>
+    <string name="beep_off_ms">每次之间的空闲（ms）</string>
+    <string name="beep_bursts">每循环响几次</string>
+    <string name="beep_cycle_ms">每轮之间的间隔（ms）</string>
+    <string name="beep_pattern_hint">例：响 300 / 空 200，每循环 3 次，轮间隔 2000 → 三声短促报警后静默两秒再重复。</string>
+    <string name="beep_pattern_short">节拍 %1$d/%2$d ms ×%3$d，轮间隔 %4$d ms</string>
     <string name="gpio_open">Z/0/1</string>
     <string name="gpio_none">板子不支持 GPIO</string>
+    <string name="gpio_pins_count">%1$d 个可用引脚</string>
+    <string name="gpio_pins_header">%1$d 个可用引脚 · %2$s</string>
+    <string name="gpio_pin_led_tag">状态灯</string>
+    <string name="gpio_pin_beep_tag">蜂鸣器</string>
+    <string name="gpio_pin_buzzer">GPIO %1$d ♪</string>
+    <string name="gpio_legend">Z 高阻 · 0 低电平 · 1 高电平</string>
+    <string name="led_auto_hint">颜色跟随干扰强度，下面每一档对应一段强度</string>
+    <string name="led_stages_caption">干净 → 拥堵</string>
     <string name="done">完成</string>
 
     <string-array name="modes">

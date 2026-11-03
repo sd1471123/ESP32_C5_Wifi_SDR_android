@@ -9,6 +9,11 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- foreground capture link: keeps the USB read loop alive while the app is behind -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
@@ -44,6 +49,12 @@
                 android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
                 android:resource="@xml/device_filter" />
         </activity>
+
+        <!-- keeps the capture thread out of the frozen-app bucket while connected -->
+        <service
+            android:name=".KeepaliveService"
+            android:exported="false"
+            android:foregroundServiceType="connectedDevice" />
 
         <!-- hands the downloaded APK to the system installer as a content:// URI -->
         <provider

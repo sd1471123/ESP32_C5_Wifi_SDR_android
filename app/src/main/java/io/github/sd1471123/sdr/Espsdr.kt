@@ -36,7 +36,7 @@ class SpecFrame(
  */
 class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
 
-    private var conn: UsbDeviceConnection? = null
+    @Volatile private var conn: UsbDeviceConnection? = null
     private var epIn: UsbEndpoint? = null
     private var epOut: UsbEndpoint? = null
     private var ctrlId: Int = 0
@@ -83,6 +83,7 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
         // rates the firmware accepts; the native USB Serial/JTAG ignores it and always answers.
         if (device.vendorId == 0x303a) {
             lineBaud = 0
+            waitForBoard()
         } else {
             var ok = false
             for (rate in intArrayOf(2000000, 1000000)) {
@@ -119,6 +120,70 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
         }
         negotiateTransport()
     }
+
+    /**
+     * Native USB Serial/JTAG handshake. A board that a previous session left with an unread
+     * stream goes silent: the firmware blocks inside its USB write and never returns to the
+     * command loop, so INFO times out until the chip reboots. Retrying the SYNC marker with a
+     * USB driven chip reset in between is exactly what replugging the cable does.
+     */
+    private fun waitForBoard() {
+        for (attempt in 0 until 3) {
+            if (attempt > 0) chipReset()
+            if (pingSync()) return
+        }
+        close()
+        throw SdrError("no SYNC reply — the board did not come back after a USB reset")
+    }
+
+    /** One short SYNC round trip; true when the marker came back unchanged. */
+    private fun pingSync(waitMs: Int = 700): Boolean {
+        drainInput()
+        nonce += 1
+        val want = "SYNC $nonce"
+        try {
+            write("$want\n")
+        } catch (_: SdrError) {
+            return false
+        }
+        val deadline = System.currentTimeMillis() + waitMs
+        while (System.currentTimeMillis() < deadline) {
+            val reply = try {
+                readLine(200)
+            } catch (_: SdrError) {
+                continue
+            }
+            if (reply == want) return true
+        }
+        return false
+    }
+
+    /**
+     * Resets the chip through the USB-JTAG peripheral: DTR falling while RTS is high reboots it
+     * and the USB connection itself stays up. DTR is asserted again afterwards so the CDC keeps
+     * sending; RTS goes back low so a later close cannot drop the board into the bootloader.
+     */
+    fun chipReset() {
+        val c = conn ?: return
+        try {
+            c.controlTransfer(0x21, 0x22, 0x0002, ctrlId, null, 0, 500)   // RTS high, DTR low
+        } catch (_: Exception) {
+        }
+        try {
+            Thread.sleep(1500)                                            // firmware boots
+        } catch (_: InterruptedException) {
+        }
+        try {
+            c.controlTransfer(0x21, 0x22, 0x0001, ctrlId, null, 0, 500)   // DTR high, RTS low
+        } catch (_: Exception) {
+        }
+        rxPos = 0
+        rxLen = 0
+        lineBuf.reset()
+    }
+
+    /** True when the link still answers; a stuck port fails here instead of at the next capture. */
+    fun ping(): Boolean = isOpen && pingSync(400)
 
     /** Opens the CDC data interface and asserts DTR (RTS must stay low or USB-JTAG resets). */
     private fun usbOpen() {
@@ -235,18 +300,35 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
         }
     }
 
+    /**
+     * Hands the radio back in the order the firmware expects: stop a running stream, RELEASE
+     * the lease, give the reply a moment to leave, then drop DTR before closing the handle.
+     * An asserted DTR is what leaves the next session with a half-open CDC (and an unread
+     * stream the firmware keeps blocking on), i.e. the "reconnect needs a replug" state.
+     */
     fun close() {
         val c = conn ?: return
-        conn = null
         if (specActive) tryCatch { stopSpec() }
         try {
             write("RELEASE\n")
+        } catch (_: Exception) {
+        }
+        conn = null
+        try {
+            Thread.sleep(30)
+        } catch (_: InterruptedException) {
+        }
+        try {
+            c.controlTransfer(0x21, 0x22, 0x0000, ctrlId, null, 0, 500)   // DTR low, RTS low
         } catch (_: Exception) {
         }
         try {
             c.close()
         } catch (_: Exception) {
         }
+        rxPos = 0
+        rxLen = 0
+        lineBuf.reset()
     }
 
     // ---- receiver controls ------------------------------------------------
@@ -257,14 +339,86 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
     /** null selects the hardware AGC, otherwise the manual PHY gain index (0..79, see LIMITS?). */
     fun setGain(manual: Int?) = cmd(if (manual == null) "GAIN HARDWARE" else "GAIN MANUAL ${manual.coerceIn(0, 79)}")
 
-    /** Number of controllable GPIO pins (GPIO? → "OK GPIO <n>"), or null when unsupported. */
-    fun gpioPins(): Int? {
+    /** Number of controllable GPIO pins, or null when unsupported. */
+    fun gpioPins(): Int? = gpioStates()?.size
+
+    /**
+     * Pin → drive state from `GPIO?`, which answers `GPIO 0:Z 3:1 ...` and lists only the pins it
+     * is willing to drive. The panel therefore works from this map: assuming 0..n-1 would show
+     * pins the board does not expose, and the reply carries no count to read a range from.
+     */
+    fun gpioStates(): Map<Int, Char>? {
         val r = cmd("GPIO?")
-        return Regex("GPIO (\\d+)").find(r)?.groupValues?.get(1)?.toInt()
+        if (!r.startsWith("GPIO")) return null
+        return parseGpioStates(r)
     }
 
     /** Drive one pin: 'Z' high impedance, '0' low, '1' high. */
     fun setGpio(pin: Int, state: Char) = cmd("GPIO $pin $state")
+
+    // ---- side commands (status LED, buzzer) --------------------------------
+    // The firmware answers one command at a time, and the capture loop is already talking to
+    // it. These are queued and sent from the capture thread between two captures, so the two
+    // never interleave on the wire.
+
+    private val pendingLock = Any()
+
+    /**
+     * One slot per command word. A newer `LED` replaces the queued one, but a status update never
+     * evicts a pending `BEEP` (or the other way round): both are produced by the same frame, and
+     * a two-entry FIFO would silently drop one of them on every frame.
+     */
+    private val pending = LinkedHashMap<String, Queued>(4)
+
+    /** A side command waiting for the wire, plus the hook that reports a refused write. */
+    private class Queued(val text: String, val onFail: ((Throwable) -> Unit)?)
+
+    /** True when the firmware exposes the addressable status LED. */
+    val hasLed: Boolean get() = caps.contains("LED")
+
+    /** True when the firmware can drive a buzzer pin. */
+    val hasBeep: Boolean get() = caps.contains("BEEP")
+
+    fun setLed(r: Int, g: Int, b: Int) =
+        cmd("LED ${r.coerceIn(0, 255)} ${g.coerceIn(0, 255)} ${b.coerceIn(0, 255)}")
+
+    /** Duty percent is the loudness; 0 silences the buzzer. */
+    fun setBeep(pin: Int, freqHz: Int, duty: Int) =
+        if (duty <= 0) cmd("BEEP 0")
+        else cmd("BEEP $pin ${freqHz.coerceIn(100, 20000)} ${duty.coerceIn(1, 100)}")
+
+    /**
+     * Queues a side command for the next gap between captures. [onFail] runs on the capture
+     * thread when the firmware refuses the command, so the caller can undo what it showed.
+     */
+    fun queue(text: String, onFail: ((Throwable) -> Unit)? = null) {
+        synchronized(pendingLock) {
+            pending[slotOf(text)] = Queued(text, onFail)    // newest of its kind wins, keep the wire free
+        }
+    }
+
+    /** True when a side command is still waiting for the wire (the caller may stop a stream). */
+    val hasPending: Boolean get() = synchronized(pendingLock) { pending.isNotEmpty() }
+
+    /** Sends queued side commands. Capture thread only, and never while SPEC streams. */
+    fun flushQueued() {
+        while (true) {
+            val next = synchronized(pendingLock) {
+                val entries = pending.entries.iterator()
+                if (!entries.hasNext()) return@synchronized null
+                val queued = entries.next().value
+                entries.remove()
+                queued
+            } ?: return
+            // A refused write (a sounding buzzer owns its pin) is swallowed here on purpose:
+            // only the hook knows what the UI promised, so reporting is its job.
+            try {
+                cmd(next.text)
+            } catch (e: SdrError) {
+                next.onFail?.invoke(e)
+            }
+        }
+    }
 
     // ---- on-chip spectrum (SPEC) ------------------------------------------
     // `SPEC 0 1 <units> <det> <rate> <n>` makes the chip run the FFT itself and stream
@@ -539,5 +693,29 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
             }
         }
         throw SdrError("no SYNC reply (wrong port or firmware?)")
+    }
+
+    companion object {
+        /**
+         * Parses a `GPIO?` reply: `GPIO 0:Z 3:1`. The reply carries no count and lists only the
+         * pins the firmware is willing to drive, so the panel must not assume 0..n-1.
+         */
+        fun parseGpioStates(reply: String): Map<Int, Char> {
+            val out = LinkedHashMap<Int, Char>()
+            for (m in Regex("(\\d+):([Z01])").findAll(reply)) out[m.groupValues[1].toInt()] = m.groupValues[2][0]
+            return out
+        }
+
+        /**
+         * Slot key of a side command: the verb, except for `GPIO`, which is keyed per pin. Keying
+         * GPIO on the verb alone let a write to one pin replace a pending write to another, so a
+         * run of pin changes only ever applied the last one.
+         */
+        internal fun slotOf(cmd: String): String {
+            val verb = cmd.substringBefore(' ')
+            if (verb != "GPIO") return verb
+            val rest = cmd.substringAfter(' ', "")
+            return if (rest.isEmpty()) verb else "$verb ${rest.substringBefore(' ')}"
+        }
     }
 }

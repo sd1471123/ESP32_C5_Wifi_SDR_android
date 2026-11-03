@@ -85,7 +85,7 @@
 
 | 组成 | 仓库 | 说明 |
 | --- | --- | --- |
-| **固件** | [ESPARGOS/esp-sdr](https://github.com/ESPARGOS/esp-sdr) | ESP-SDR 固件，把 ESP32 系列变成低占空比的软件无线电。**ESP32-C5 开发板必须先刷这个固件**，App 才能和它通信 |
+| **固件** | [sd1471123/esp-sdr](https://github.com/sd1471123/esp-sdr) | **推荐使用**：[ESPARGOS/esp-sdr](https://github.com/ESPARGOS/esp-sdr) 的 fork，带本 App 适配的 ESP32-C5 构建，状态灯、蜂鸣器、空闲 GPIO 控制一应俱全。**ESP32-C5 开发板必须先刷这个固件**，App 才能和它通信 |
 | **桌面端** | [sd1471123/ESP32_C5_Wifi_spectrum_analyzer](https://github.com/sd1471123/ESP32_C5_Wifi_spectrum_analyzer) | 同一固件的 Python/Qt 桌面客户端，也是本项目的协议、频段规划和 DSP 参考实现 |
 | **Android 端** | 本仓库 | 手机侧界面：USB-OTG 采集、频谱 + 瀑布、信道分析、I/Q 录制 |
 
@@ -128,7 +128,8 @@ powershell -ExecutionPolicy Bypass -File tools/make_icons.ps1
 
 ## 硬件
 
-- 已烧录 [ESP-SDR](https://github.com/ESPARGOS/esp-sdr) 固件的 ESP32-C5 开发板。
+- 已烧录 [esp-sdr](https://github.com/sd1471123/esp-sdr) 固件的 ESP32-C5 开发板（推荐，本人维护
+  的 fork；上游 [ESPARGOS/esp-sdr](https://github.com/ESPARGOS/esp-sdr) 也可用）。
   刷写方式：桌面项目的 `flash_c5.py`，或者直接用 `idf.py flash`。
 - 用 OTG 转接头把板子的 **"USB" 口（原生 USB Serial/JTAG）** 接到手机。
 - **供电**：射频启动瞬间电流尖峰较大，手机 OTG 口常常供不上，板子会欠压重启。

@@ -74,6 +74,11 @@
     <string name="cfg_reset_done">Defaults restored</string>
     <string name="cfg_cancel">Cancel</string>
 
+    <!-- foreground capture link -->
+    <string name="keepalive_channel">Capture link</string>
+    <string name="keepalive_title">C5-SDR is capturing</string>
+    <string name="keepalive_text">The USB link stays open while the app is in the background.</string>
+
     <!-- update check -->
     <string name="update_check">Check for updates</string>
     <string name="update_icon">⟳</string>
@@ -137,8 +142,74 @@
     <string name="status_cap_off">Spectrum: phone FFT</string>
     <string name="status_spec_fail">On-chip spectrum unavailable, back to phone FFT: %1$s</string>
     <string name="gpio_title">GPIO</string>
+
+    <!-- GPIO sub-menu: pin levels, status LED, buzzer -->
+    <string name="gpio_menu_pins">Pin levels (Z / 0 / 1)</string>
+    <string name="gpio_menu_led">Status LED</string>
+    <string name="gpio_menu_beep">Buzzer</string>
+    <string name="gpio_pins_sub">Drive each pin to Z, 0 or 1</string>
+    <string name="gpio_led_sub">GPIO %1$d · RGB %2$d/%3$d/%4$d · %5$d%%</string>
+    <string name="gpio_beep_sub">GPIO %1$d · %2$s · %3$s · %4$d ch</string>
+    <string name="gpio_save">Save</string>
+    <string name="gpio_reset">Defaults</string>
+    <string name="gpio_saved">Saved and pushed to the board</string>
+    <string name="cancel">Cancel</string>
+    <string name="gpio_reset_done">Pin settings restored to defaults</string>
+    <string name="apply">Apply</string>
+    <string name="side_need_device">Connect a device first</string>
+    <string name="side_unsupported">The firmware does not support this — update the board firmware</string>
+
+    <string name="led_pin">LED pin</string>
+    <string name="led_red">Red</string>
+    <string name="led_green">Green</string>
+    <string name="led_blue">Blue</string>
+    <string name="led_bright">Brightness (%)</string>
+    <string name="led_off">LED off</string>
+    <string name="led_applied">LED %1$d %2$d %3$d</string>
+    <string name="led_mode">Colour source</string>
+    <string name="led_mode_fixed">Fixed colour</string>
+    <string name="led_mode_auto">Follow interference</string>
+    <string name="led_auto_applied">Status LED follows the interference</string>
+    <string name="led_stages">Stage colours</string>
+    <string name="led_stage_range">Stage %1$d · %2$d–%3$d%%</string>
+    <string name="led_stages_applied">Stage colours saved</string>
+    <string name="led_stages_reset">Default gradient</string>
+    <string name="gpio_led_auto_sub">GPIO %1$d · interference, %2$d stages</string>
+
+    <string name="beep_pin">Buzzer pin</string>
+    <string name="beep_freq">Tone (Hz)</string>
+    <string name="beep_type">Buzzer type</string>
+    <string name="beep_type_passive">Passive (tone)</string>
+    <string name="beep_type_active">Active (PWM)</string>
+    <string name="beep_type_active_short">Active</string>
+    <string name="beep_tone">%1$d Hz</string>
+    <string name="beep_condition">Trigger</string>
+    <string name="beep_cond_activity">Channel bar red</string>
+    <string name="beep_cond_rate">Detection bar red</string>
+    <string name="beep_max">Max volume (%)</string>
+    <string name="beep_channels">Bound channels (max 10)</string>
+    <string name="beep_chan">Channel %1$d</string>
+    <string name="beep_channels_limit">At most %1$d channels</string>
+    <string name="beep_saved">Buzzer saved: %1$d channel(s) bound</string>
+    <string name="beep_test">Test</string>
+    <string name="beep_pattern">Alarm rhythm</string>
+    <string name="beep_pattern_on">Pulse the tone (off keeps it sounding)</string>
+    <string name="beep_on_ms">On time (ms)</string>
+    <string name="beep_off_ms">Off time between beeps (ms)</string>
+    <string name="beep_bursts">Beeps per cycle</string>
+    <string name="beep_cycle_ms">Gap between cycles (ms)</string>
+    <string name="beep_pattern_hint">e.g. 300 on / 200 off, 3 beeps per cycle, 2000 between cycles: three short beeps, then two seconds of silence.</string>
+    <string name="beep_pattern_short">%1$d/%2$d ms ×%3$d, %4$d ms between cycles</string>
     <string name="gpio_open">Z/0/1</string>
     <string name="gpio_none">Board does not expose GPIO</string>
+    <string name="gpio_pins_count">%1$d spare pins</string>
+    <string name="gpio_pins_header">%1$d spare pins · %2$s</string>
+    <string name="gpio_pin_led_tag">status LED</string>
+    <string name="gpio_pin_beep_tag">buzzer</string>
+    <string name="gpio_pin_buzzer">GPIO %1$d ♪</string>
+    <string name="gpio_legend">Z high-Z · 0 low · 1 high</string>
+    <string name="led_auto_hint">The colour follows the interference score: each stage below owns one level.</string>
+    <string name="led_stages_caption">quiet → busy</string>
     <string name="done">Done</string>
 
     <string-array name="modes">
