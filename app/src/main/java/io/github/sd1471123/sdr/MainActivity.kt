@@ -25,6 +25,7 @@ import android.text.TextUtils
 import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.widget.AdapterView
@@ -81,12 +82,13 @@ class MainActivity : Activity() {
         const val KEY_LED_BRIGHT = "led_bright"
         const val KEY_LED_MODE = "led_mode"
         const val KEY_LED_STAGES = "led_stages"
+        const val KEY_LED_ON = "led_on"
 
         /** Pins the user drove away from Z, as "5:1,6:0" — the firmware forgets them on reboot. */
         const val KEY_GPIO_STATES = "gpio_states"
 
         /** Pin cell metrics: label, then a 7 dp gap, then the 3x24 dp control on its 2 dp track. */
-        private const val LABEL_WIDTH_DP = 52
+        private const val LABEL_WIDTH_DP = 60
         private const val COLUMN_GAP_DP = 18
         private const val CELL_WIDTH_DP = LABEL_WIDTH_DP + 7 + 78
         const val KEY_BEEP_PIN = "beep_pin"
@@ -202,6 +204,8 @@ class MainActivity : Activity() {
     private var ledB = 255
     private var ledBright = 100
     private var ledMode = DEFAULT_LED_MODE
+    /** Master switch of the status LED: off wins over the colour, the mode and the interference score. */
+    private var ledOn = true
     /** Per stage: r, g, b and brightness. Index 0 is the cleanest band, the last one the busiest. */
     private var ledStages = defaultLedStages()
     private var ledScore = 0f
@@ -310,6 +314,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        alignRailLabels(findViewById(R.id.rootLayout))
 
         txtStatus = findViewById(R.id.txtStatus)
         spectrum = findViewById(R.id.spectrum)
@@ -1185,10 +1190,17 @@ class MainActivity : Activity() {
     private fun showGpioMenu() {
         val box = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(6), dp(4), dp(6), dp(2))
+            setPadding(dp(16), dp(10), dp(16), dp(6))
         }
         lateinit var dialog: AlertDialog
         val close = { dialog.dismiss() }
+
+        panelHeader(
+            box, R.string.gpio_title,
+            getString(R.string.gpio_pin_led_tag) + " " + ledPin + " · " +
+                getString(R.string.gpio_pin_beep_tag) + " " + beepPin
+        )
+        box.addView(divider())
 
         box.addView(
             menuRow(R.string.gpio_menu_pins, pinsSummary()) {
@@ -1221,7 +1233,7 @@ class MainActivity : Activity() {
         box.addView(
             LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
-                setPadding(dp(10), dp(10), dp(10), dp(2))
+                setPadding(0, dp(10), 0, dp(2))
                 addView(menuButton(getString(R.string.gpio_save), true) {
                     saveSideConfig()
                     repushSide()
@@ -1236,7 +1248,6 @@ class MainActivity : Activity() {
         )
 
         dialog = AlertDialog.Builder(this)
-            .setTitle(R.string.gpio_title)
             .setView(box)
             .setNegativeButton(R.string.done, null)
             .create()
@@ -1262,7 +1273,7 @@ class MainActivity : Activity() {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(12), dp(11), dp(10), dp(11))
+            setPadding(0, dp(11), 0, dp(11))
             isClickable = true
             isFocusable = true
             val attrs = TypedValue()
@@ -1312,14 +1323,46 @@ class MainActivity : Activity() {
             setOnClickListener { onClick() }
         }
 
+    /**
+     * Gives every rail label the same column: the natural width of the widest one, measured after
+     * inflation. The text itself is left alone — no stretched letters — so Chinese and English
+     * keep their normal spacing; short labels simply centre inside that column and the controls to
+     * their right all start on the same line.
+     */
+    private fun alignRailLabels(root: View) {
+        val labels = ArrayList<TextView>()
+        fun collect(v: View) {
+            if (v is ViewGroup) {
+                for (i in 0 until v.childCount) collect(v.getChildAt(i))
+                return
+            }
+            if (v is TextView && v.tag == "rail") labels.add(v)
+        }
+        collect(root)
+        if (labels.isEmpty()) return
+        val free = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        var widest = 0
+        for (label in labels) {
+            label.measure(free, free)
+            widest = maxOf(widest, label.measuredWidth)
+        }
+        for (label in labels) {
+            val params = label.layoutParams as LinearLayout.LayoutParams
+            params.width = widest
+            label.layoutParams = params
+        }
+    }
+
     private fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
 
     private fun pinsSummary(): String =
         if (dev == null) getString(R.string.side_need_device) else getString(R.string.gpio_pins_sub)
 
-    private fun ledSummary(): String =
-        if (ledMode == LED_AUTO) getString(R.string.gpio_led_auto_sub, ledPin, LED_STAGES)
-        else getString(R.string.gpio_led_sub, ledPin, ledR, ledG, ledB, ledBright)
+    private fun ledSummary(): String = when {
+        !ledOn -> getString(R.string.gpio_led_off_sub, ledPin)
+        ledMode == LED_AUTO -> getString(R.string.gpio_led_auto_sub, ledPin, LED_STAGES)
+        else -> getString(R.string.gpio_led_sub, ledPin, ledR, ledG, ledB, ledBright)
+    }
 
     private fun beepSummary(): String {
         val condition =
@@ -1340,6 +1383,7 @@ class MainActivity : Activity() {
         ledB = 255
         ledBright = 100
         ledMode = DEFAULT_LED_MODE
+        ledOn = true
         ledStages = defaultLedStages()
         ledStage = -1
         ledScore = 0f
@@ -1373,6 +1417,8 @@ class MainActivity : Activity() {
             return
         }
         val box = panel()
+        panelHeader(box, R.string.gpio_menu_led, ledSummary())
+        box.addView(divider())
         val editPin = numberField(box, R.string.led_pin, ledPin)
 
         // Two sources: a colour the user picks, or the stage table driven by the interference score.
@@ -1423,8 +1469,7 @@ class MainActivity : Activity() {
         showMode(ledMode == LED_AUTO)
         modes.setOnCheckedChangeListener { _, id -> showMode(id == LED_MODE_AUTO_ID) }
 
-        AlertDialog.Builder(this)
-            .setTitle(R.string.gpio_menu_led)
+        val dialog = AlertDialog.Builder(this)
             .setView(scroll)
             .setPositiveButton(R.string.apply) { _, _ ->
                 ledPin = editPin.text.toString().toIntOrNull()?.coerceIn(0, 48) ?: DEFAULT_LED_PIN
@@ -1436,18 +1481,41 @@ class MainActivity : Activity() {
                 ledStage = -1
                 ledScore = 0f
                 saveSideConfig()
-                if (ledMode == LED_FIXED) applyLed(true) else tell(getString(R.string.led_auto_applied))
+                when {
+                    // The switch is a setting of its own: saving while dark must not relight the strip.
+                    !ledOn -> {
+                        applyLed(false)
+                        tell(getString(R.string.led_off_kept))
+                    }
+                    ledMode == LED_FIXED -> applyLed(true)
+                    else -> tell(getString(R.string.led_auto_applied))
+                }
             }
-            .setNeutralButton(R.string.led_off) { _, _ ->
-                ledMode = LED_FIXED
-                ledStage = -1
-                saveSideConfig()
-                sendSide("LED 0", getString(R.string.led_off))
-            }
+            .setNeutralButton(if (ledOn) R.string.led_off else R.string.led_on, null)
             .setNegativeButton(R.string.cancel, null)
             .create()
             .also { it.backToMenu() }
-            .show()
+
+        // Set by the builder, the neutral button dismisses the dialog. Replacing its listener after
+        // the dialog is shown lets the switch flip in place: the page, the mode and the sliders the
+        // user was editing all stay as they are, only the label follows the new state.
+        dialog.setOnShowListener {
+            val toggle = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
+            toggle.setOnClickListener {
+                ledOn = !ledOn
+                ledStage = -1                    // a fresh stage, so the auto colour re-pushes
+                ledScore = 0f
+                if (ledOn) {
+                    if (ledMode == LED_FIXED) applyLed(true)
+                    else tell(getString(R.string.led_auto_applied))
+                } else {
+                    sendSide("LED 0", getString(R.string.led_off))
+                }
+                saveSideConfig()                 // the switch outlives the dialog and the connection
+                toggle.setText(if (ledOn) R.string.led_off else R.string.led_on)
+            }
+        }
+        dialog.show()
     }
 
     /**
@@ -1456,6 +1524,8 @@ class MainActivity : Activity() {
      */
     private fun showLedStagesPanel() {
         val box = panel()
+        panelHeader(box, R.string.led_stages, null)
+        box.addView(divider())
         val draft = Array(LED_STAGES) { ledStages[it].copyOf() }
         val swatches = ArrayList<View>(LED_STAGES)
 
@@ -1466,6 +1536,8 @@ class MainActivity : Activity() {
             val hi = (i + 1) * 100 / LED_STAGES
             box.addView(TextView(this).apply {
                 text = getString(R.string.led_stage_range, i + 1, lo, hi)
+                setTextColor(getColor(R.color.text_dim))
+                textSize = 9f
                 setPadding(0, dp(10), 0, dp(2))
             })
             val swatch = View(this).apply {
@@ -1481,7 +1553,6 @@ class MainActivity : Activity() {
         }
 
         AlertDialog.Builder(this)
-            .setTitle(R.string.led_stages)
             .setView(panelScroll(box))
             .setPositiveButton(R.string.apply) { _, _ ->
                 ledStages = draft
@@ -1506,6 +1577,8 @@ class MainActivity : Activity() {
             return
         }
         val box = panel()
+        panelHeader(box, R.string.gpio_menu_beep, beepSummary())
+        box.addView(divider())
         val editPin = numberField(box, R.string.beep_pin, beepPin)
         val editFreq = numberField(box, R.string.beep_freq, beepFreq)
 
@@ -1549,24 +1622,67 @@ class MainActivity : Activity() {
         slider(box, getString(R.string.beep_max), maxVol, 100) { maxVol = it }
 
         box.addView(title(R.string.beep_channels))
-        val boxes = LinkedHashMap<Int, CheckBox>()
+        // One tappable square per channel: 16 channels stacked as rows ate half the panel, so they
+        // become a compact grid — bound channels light up in the accent colour. Six per row, and a
+        // one-or-two chip leftover is folded into the rows above instead of leaving a stub line.
+        val chosen = LinkedHashSet(beepChannels)
+        val channels = Bands.channels20(currentBand)
+        val perRow = 6
+        var rows = (channels.size + perRow - 1) / perRow
+        if (rows > 1 && channels.size % perRow in 1..2) rows--
+        val base = channels.size / rows
+        val tail = channels.size % rows
+        val slots = base + if (tail > 0) tail else 0
         val grid = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        for (freq in Bands.channels20(currentBand)) {
-            val num = Bands.channelNumber(freq.toFloat())
-            val cb = CheckBox(this).apply {
-                text = getString(R.string.beep_chan, num)
-                isChecked = beepChannels.contains(num)
-                setOnCheckedChangeListener { view, checked ->
-                    if (checked && boxes.count { it.value.isChecked } > MAX_BEEP_CHANNELS) {
-                        (view as CheckBox).isChecked = false
-                        toast(getString(R.string.beep_channels_limit, MAX_BEEP_CHANNELS))
-                    }
+
+        fun paintChip(chip: TextView, on: Boolean) {
+            chip.setBackgroundResource(if (on) R.drawable.bg_button_accent else R.drawable.bg_button)
+            chip.setTextColor(getColor(if (on) R.color.accent else R.color.text_dim))
+            chip.setTypeface(null, if (on) Typeface.BOLD else Typeface.NORMAL)
+        }
+
+        var index = 0
+        for (r in 0 until rows) {
+            // The leftover chips ride along on the first row: 13 channels become 7 + 6.
+            val count = if (r == 0) base + tail else base
+            val line = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+            for (slot in 0 until slots) {
+                val params = LinearLayout.LayoutParams(0, dp(26), 1f).apply { marginStart = dp(2) }
+                if (slot >= count) {
+                    // Keep the cells of a short row the same width, so every column stays aligned.
+                    line.addView(View(this), params)
+                    continue
                 }
+                val num = Bands.channelNumber(channels[index++].toFloat())
+                val chip = TextView(this).apply {
+                    text = num.toString()
+                    textSize = 10f
+                    gravity = Gravity.CENTER
+                    includeFontPadding = false
+                    isClickable = true
+                    isFocusable = false
+                }
+                paintChip(chip, num in chosen)
+                chip.setOnClickListener {
+                    if (num in chosen) {
+                        chosen.remove(num)
+                    } else {
+                        if (chosen.size >= MAX_BEEP_CHANNELS) {
+                            toast(getString(R.string.beep_channels_limit, MAX_BEEP_CHANNELS))
+                            return@setOnClickListener
+                        }
+                        chosen.add(num)
+                    }
+                    paintChip(chip, num in chosen)
+                }
+                line.addView(chip, params)
             }
-            boxes[num] = cb
-            grid.addView(cb)
+            grid.addView(line, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = if (r == 0) 0 else dp(3) })
         }
         box.addView(grid)
+        box.addView(hint(R.string.beep_channels_hint))
 
         // Alarm rhythm: on/off per beep, beeps per cycle, and the pause between cycles. Off keeps
         // the old behaviour, one continuous tone while the condition holds.
@@ -1576,10 +1692,21 @@ class MainActivity : Activity() {
             isChecked = beepPattern
         }
         box.addView(cbPattern)
-        val editOn = numberField(box, R.string.beep_on_ms, beepOnMs)
-        val editOff = numberField(box, R.string.beep_off_ms, beepOffMs)
-        val editBursts = numberField(box, R.string.beep_bursts, beepBursts)
-        val editCycle = numberField(box, R.string.beep_cycle_ms, beepCycleMs)
+        // Four numbers on a 2x2 grid: stacked one per row they took ~270 dp, more than the whole
+        // rest of the panel.
+        val rhythmEdits = numberGrid(
+            box,
+            listOf(
+                R.string.beep_on_ms to beepOnMs,
+                R.string.beep_off_ms to beepOffMs,
+                R.string.beep_bursts to beepBursts,
+                R.string.beep_cycle_ms to beepCycleMs,
+            )
+        )
+        val editOn = rhythmEdits[0]
+        val editOff = rhythmEdits[1]
+        val editBursts = rhythmEdits[2]
+        val editCycle = rhythmEdits[3]
         val rhythm = listOf(editOn, editOff, editBursts, editCycle)
         fun syncRhythm() {
             for (f in rhythm) {
@@ -1591,23 +1718,7 @@ class MainActivity : Activity() {
         syncRhythm()
         box.addView(hint(R.string.beep_pattern_hint))
 
-        // The test lives inside the panel: a dialog button always dismisses the dialog, so a
-        // neutral "test" made the panel vanish on the first tap.
-        box.addView(
-            menuButton(getString(R.string.beep_test), accent = false) {
-                testBeep(
-                    editPin.text.toString().toIntOrNull()?.coerceIn(0, 48) ?: beepPin,
-                    editFreq.text.toString().toIntOrNull()?.coerceIn(100, 20000) ?: beepFreq,
-                    maxVol,
-                )
-            },
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dp(8) }
-        )
-
-        AlertDialog.Builder(this)
-            .setTitle(R.string.gpio_menu_beep)
+        val dialog = AlertDialog.Builder(this)
             .setView(panelScroll(box))
             .setPositiveButton(R.string.apply) { _, _ ->
                 beepPin = editPin.text.toString().toIntOrNull()?.coerceIn(0, 48) ?: DEFAULT_BEEP_PIN
@@ -1617,7 +1728,7 @@ class MainActivity : Activity() {
                 beepMode = if (rbRate.isChecked) 1 else 0
                 beepActive = rbActive.isChecked
                 beepChannels.clear()
-                for ((num, cb) in boxes) if (cb.isChecked) beepChannels.add(num)
+                beepChannels.addAll(chosen)
                 beepPattern = cbPattern.isChecked
                 beepOnMs = editOn.text.toString().toIntOrNull()?.coerceIn(BEEP_MIN_MS, BEEP_MAX_MS)
                     ?: DEFAULT_BEEP_ON_MS
@@ -1633,20 +1744,68 @@ class MainActivity : Activity() {
                 tell(getString(R.string.beep_saved, beepChannels.size))
             }
             .setNegativeButton(R.string.cancel, null)
+            // The neutral slot is the leftmost button of the row: test | cancel | apply.
+            .setNeutralButton(R.string.beep_test, null)
             .create()
             .also { it.backToMenu() }
-            .show()
-    }
-
-    private fun panel(): LinearLayout {
-        val pad = (20 * resources.displayMetrics.density).toInt()
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(pad, pad / 2, pad, pad / 2)
+        dialog.show()
+        // A dialog button dismisses on click by default; wiring the button itself keeps the panel
+        // open, and the test plays the values currently typed without applying them.
+        dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+            testBeep(
+                editPin.text.toString().toIntOrNull()?.coerceIn(0, 48) ?: beepPin,
+                editFreq.text.toString().toIntOrNull()?.coerceIn(100, 20000) ?: beepFreq,
+                maxVol,
+            )
         }
     }
 
-    private fun title(id: Int) = TextView(this).apply { text = getString(id) }
+    private fun panel(): LinearLayout {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(10), dp(16), dp(10))
+        }
+    }
+
+    /**
+     * Panel header on the main screen's type scale: a bold 13sp title over an 8sp dim subtitle —
+     * the same pair every card on the first layer uses. Panels add their own divider under it.
+     */
+    private fun panelHeader(box: LinearLayout, titleId: Int, subtitle: String?) {
+        box.addView(TextView(this).apply {
+            setText(titleId)
+            setTextColor(getColor(R.color.text))
+            textSize = 13f
+            letterSpacing = 0.04f
+            setTypeface(typeface, Typeface.BOLD)
+        })
+        if (subtitle != null) box.addView(TextView(this).apply {
+            text = subtitle
+            setTextColor(getColor(R.color.text_dim))
+            textSize = 8f
+            letterSpacing = 0.08f
+            setPadding(0, dp(3), 0, 0)
+        })
+    }
+
+    /** Section heading inside a panel, the main screen's card-title style. */
+    private fun title(id: Int) = TextView(this).apply {
+        setText(id)
+        setTextColor(getColor(R.color.text))
+        textSize = 13f
+        letterSpacing = 0.04f
+        setTypeface(typeface, Typeface.BOLD)
+        setPadding(0, dp(8), 0, dp(2))
+    }
+
+    /** Small dim caption above an input, the main screen's SdrLabel. */
+    private fun fieldLabel(id: Int) = TextView(this).apply {
+        setText(id)
+        setTextColor(getColor(R.color.text_dim))
+        textSize = 8f
+        letterSpacing = 0.08f
+        setPadding(0, dp(6), 0, dp(2))
+    }
 
     /** Secondary line of explanation inside a panel. */
     private fun hint(id: Int) = TextView(this).apply {
@@ -1686,13 +1845,46 @@ class MainActivity : Activity() {
         }
     }
 
+    /** Numeric input in the app's SdrEdit look, instead of the theme's underlined text box. */
+    private fun numberEdit(value: Int) = EditText(this).apply {
+        inputType = InputType.TYPE_CLASS_NUMBER
+        setText(value.toString())
+        textSize = 12f
+        minHeight = dp(32)
+        setBackgroundResource(R.drawable.bg_input)
+        setPadding(dp(8), dp(2), dp(8), dp(2))
+    }
+
     private fun numberField(box: LinearLayout, label: Int, value: Int): EditText {
-        box.addView(title(label))
-        return EditText(this).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER
-            setText(value.toString())
-            box.addView(this)
+        box.addView(fieldLabel(label))
+        return numberEdit(value).apply { box.addView(this) }
+    }
+
+    /** Two compact number fields per row, label above the input: four values in two rows. */
+    private fun numberGrid(box: LinearLayout, fields: List<Pair<Int, Int>>): List<EditText> {
+        val edits = ArrayList<EditText>(fields.size)
+        var row: LinearLayout? = null
+        for ((i, field) in fields.withIndex()) {
+            if (i % 2 == 0) {
+                row = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    if (i > 0) setPadding(0, dp(2), 0, 0)
+                }
+                box.addView(row)
+            }
+            val cell = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+            cell.addView(fieldLabel(field.first))
+            val edit = numberEdit(field.second)
+            cell.addView(edit)
+            edits.add(edit)
+            row!!.addView(
+                cell,
+                LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    if (i % 2 == 0) marginEnd = dp(8)
+                }
+            )
         }
+        return edits
     }
 
     private fun slider(box: LinearLayout, label: String, value: Int, max: Int, onChange: (Int) -> Unit) {
@@ -1759,7 +1951,9 @@ class MainActivity : Activity() {
     private fun repushSide() {
         val d = dev ?: return
         if (d.hasLed) {
-            if (ledMode == LED_FIXED) applyLed(false)
+            // The strip boots dark, so an off switch is re-sent instead of the saved colour.
+            if (!ledOn) sendSide("LED 0", null)
+            else if (ledMode == LED_FIXED) applyLed(false)
             // A steady score keeps its stage, so without this the auto colour would not re-push.
             ledStage = -1
             ledScore = 0f
@@ -1772,6 +1966,10 @@ class MainActivity : Activity() {
 
     /** Colour scaled by the brightness slider, then handed to the capture thread. */
     private fun applyLed(notify: Boolean) {
+        if (!ledOn) {                        // dark stays dark, whatever the saved colour says
+            sendSide("LED 0", if (notify) getString(R.string.led_off) else null)
+            return
+        }
         val k = ledBright / 100f
         val r = (ledR * k).toInt().coerceIn(0, 255)
         val g = (ledG * k).toInt().coerceIn(0, 255)
@@ -1862,7 +2060,7 @@ class MainActivity : Activity() {
      * transfer plus a tick delay) and the capture loop has to keep its rhythm.
      */
     private fun updateLed(frame: SdrFrame) {
-        if (ledMode != LED_AUTO || dev?.hasLed != true) return
+        if (!ledOn || ledMode != LED_AUTO || dev?.hasLed != true) return
         val score = Dsp.interferenceScore(frame.avgDb)
         val attack = if (score > ledScore) 0.5f else 0.1f    // jumps up, fades down
         ledScore += (score - ledScore) * attack
@@ -2007,6 +2205,7 @@ class MainActivity : Activity() {
         ledB = p.getInt(KEY_LED_B, ledB)
         ledBright = p.getInt(KEY_LED_BRIGHT, ledBright)
         ledMode = p.getInt(KEY_LED_MODE, DEFAULT_LED_MODE)
+        ledOn = p.getBoolean(KEY_LED_ON, true)
         ledStages = decodeStages(p.getString(KEY_LED_STAGES, null))
         beepPin = p.getInt(KEY_BEEP_PIN, DEFAULT_BEEP_PIN)
         beepFreq = p.getInt(KEY_BEEP_FREQ, DEFAULT_BEEP_FREQ)
@@ -2033,6 +2232,7 @@ class MainActivity : Activity() {
             .putInt(KEY_LED_B, ledB)
             .putInt(KEY_LED_BRIGHT, ledBright)
             .putInt(KEY_LED_MODE, ledMode)
+            .putBoolean(KEY_LED_ON, ledOn)
             .putString(KEY_LED_STAGES, encodeStages())
             .putInt(KEY_BEEP_PIN, beepPin)
             .putInt(KEY_BEEP_FREQ, beepFreq)

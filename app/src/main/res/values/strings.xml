@@ -132,7 +132,7 @@
     <string name="dc_off">Keep</string>
     <string name="cap_row">Capture</string>
     <string name="cap_iq">IQ stream</string>
-    <string name="cap_spec">On-chip spectrum</string>
+    <string name="cap_spec">Chip SPEC</string>
     <string name="wf_row">Waterfall</string>
     <string name="wf_max">Every frame</string>
     <string name="wf_30">30 rows/s</string>
@@ -165,6 +165,9 @@
     <string name="led_blue">Blue</string>
     <string name="led_bright">Brightness (%)</string>
     <string name="led_off">LED off</string>
+    <string name="led_on">LED on</string>
+    <string name="led_off_kept">Saved — LED stays off</string>
+    <string name="gpio_led_off_sub">GPIO %1$d · off</string>
     <string name="led_applied">LED %1$d %2$d %3$d</string>
     <string name="led_mode">Colour source</string>
     <string name="led_mode_fixed">Fixed colour</string>
@@ -190,6 +193,7 @@
     <string name="beep_channels">Bound channels (max 10)</string>
     <string name="beep_chan">Channel %1$d</string>
     <string name="beep_channels_limit">At most %1$d channels</string>
+    <string name="beep_channels_hint">Tap a channel to bind it, tap again to unbind.</string>
     <string name="beep_saved">Buzzer saved: %1$d channel(s) bound</string>
     <string name="beep_test">Test</string>
     <string name="beep_pattern">Alarm rhythm</string>

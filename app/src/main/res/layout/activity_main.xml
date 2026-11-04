@@ -125,7 +125,7 @@
 
         <!-- the rail: scrollable options + a fixed row for update / record -->
         <LinearLayout
-            android:layout_width="140dp"
+            android:layout_width="156dp"
             android:layout_height="match_parent"
             android:orientation="vertical">
 
@@ -153,9 +153,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/mode" />
 
@@ -178,9 +180,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/source" />
 
@@ -204,9 +208,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/preset" />
 
@@ -294,9 +300,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/rate" />
 
@@ -319,9 +327,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/bits_row" />
 
@@ -344,9 +354,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/dc_row" />
 
@@ -370,9 +382,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/cap_row" />
 
@@ -395,9 +409,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/wf_row" />
 
@@ -419,9 +435,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/fft" />
 
@@ -443,9 +461,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/bandwidth" />
 
@@ -469,9 +489,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/lo_offset" />
 
@@ -494,9 +516,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/axis_floor" />
 
@@ -518,9 +542,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/axis_span" />
 
@@ -543,9 +569,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/trace_avg" />
 
@@ -611,9 +639,11 @@
 
                     <TextView
                         style="@style/SdrLabel"
-                        android:layout_width="34dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:ellipsize="end"
+                        android:gravity="center"
+                        android:tag="rail"
                         android:maxLines="1"
                         android:text="@string/language" />
 
@@ -652,19 +682,20 @@
                         android:text="@string/gpio_open" />
                 </LinearLayout>
 
-                <!-- parameter snapshot: save the current controls / restore the defaults -->
+                <!-- parameter snapshot: save the current controls / restore the defaults.
+                     Stacked, not side by side: "Save config" needs ~62 dp at 10 sp and two
+                     half-width buttons in this rail only leave ~46 dp of text room. -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:orientation="horizontal">
+                    android:orientation="vertical">
 
                     <Button
                         android:id="@+id/btnSaveCfg"
                         style="@style/SdrButton.Compact"
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="28dp"
-                        android:layout_weight="1"
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:text="@string/cfg_save"
@@ -673,10 +704,9 @@
                     <Button
                         android:id="@+id/btnResetCfg"
                         style="@style/SdrButton.Compact"
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="28dp"
-                        android:layout_marginStart="4dp"
-                        android:layout_weight="1"
+                        android:layout_marginTop="4dp"
                         android:ellipsize="end"
                         android:maxLines="1"
                         android:text="@string/cfg_reset"

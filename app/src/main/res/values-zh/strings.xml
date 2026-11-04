@@ -165,6 +165,9 @@
     <string name="led_blue">蓝</string>
     <string name="led_bright">亮度（%）</string>
     <string name="led_off">关灯</string>
+    <string name="led_on">开灯</string>
+    <string name="led_off_kept">已保存，灯保持关闭</string>
+    <string name="gpio_led_off_sub">GPIO %1$d · 已关灯</string>
     <string name="led_applied">LED %1$d %2$d %3$d</string>
     <string name="led_mode">颜色来源</string>
     <string name="led_mode_fixed">固定颜色</string>
@@ -190,6 +193,7 @@
     <string name="beep_channels">绑定信道（最多 10 个）</string>
     <string name="beep_chan">信道 %1$d</string>
     <string name="beep_channels_limit">最多只能选 %1$d 个信道</string>
+    <string name="beep_channels_hint">点一下信道即绑定，再点一次解绑。</string>
     <string name="beep_saved">蜂鸣器已保存：绑定 %1$d 个信道</string>
     <string name="beep_test">测试</string>
     <string name="beep_pattern">报警节拍</string>
