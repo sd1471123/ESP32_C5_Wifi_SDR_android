@@ -26,6 +26,7 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.view.WindowInsets
 import android.view.WindowInsetsController
 import android.widget.AdapterView
@@ -183,6 +184,10 @@ class MainActivity : Activity() {
     private lateinit var btnUpdate: Button
     private lateinit var btnPause: Button
     private lateinit var btnGpio: Button
+    private lateinit var btnScreen: Button
+
+    /** True keeps the window awake; the flag lives on the window, so it dies with the activity. */
+    private var keepScreenOn = false
     private lateinit var chkAgc: CheckBox
 
     /** True stops the capture loop itself, so nothing keeps scanning behind a frozen display. */
@@ -347,6 +352,9 @@ class MainActivity : Activity() {
         btnPause = findViewById(R.id.btnPause)
         btnPause.setOnClickListener { setPaused(!paused) }
         setPaused(false)                 // seeds the icon size that matches the pause glyph
+        btnScreen = findViewById(R.id.btnScreen)
+        btnScreen.setOnClickListener { setKeepScreenOn(!keepScreenOn) }
+        showKeepScreenOn()               // seeds the dim state of the sun
         findViewById<Button>(R.id.btnSaveCfg).setOnClickListener { saveConfig() }
         findViewById<Button>(R.id.btnResetCfg).setOnClickListener { confirmResetConfig() }
         findViewById<Button>(R.id.btnClear).setOnClickListener { spectrum.clear() }
@@ -606,6 +614,23 @@ class MainActivity : Activity() {
         btnPause.setText(if (on) R.string.resume_icon else R.string.pause_icon)
         // ▶ reads smaller than ❚❚ at the same size, so nudge it up to match.
         btnPause.textSize = if (on) 13f else 10f
+    }
+
+    /**
+     * The sun in the top bar: keeps the panel lit while the spectrum is being watched. The flag
+     * rides on the window, so it needs no permission and goes away with the activity.
+     */
+    private fun setKeepScreenOn(on: Boolean) {
+        keepScreenOn = on
+        if (on) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        showKeepScreenOn()
+        tell(getString(if (on) R.string.screen_on else R.string.screen_off))
+    }
+
+    /** Lit sun = holding the screen on, dim sun = the system timeout applies again. */
+    private fun showKeepScreenOn() {
+        btnScreen.alpha = if (keepScreenOn) 1f else 0.45f
     }
 
     // ---- saved configuration ----------------------------------------------
@@ -902,11 +927,21 @@ class MainActivity : Activity() {
         Thread {
             val wasPaused = source?.paused ?: false
             try {
-                // The capture loop owns the wire while it runs: pause it for the query and give
-                // the capture in flight a moment to come back before reading.
+                // The capture loop owns the wire while it runs, and pausing it only takes effect
+                // at the top of its next step: sleeping a fixed 200 ms was a gamble. When the
+                // capture in flight outlived it, the GPIO? reply and the DATA payload landed in
+                // each other's reads, the CRC check failed and the whole capture was torn down —
+                // which is the "capture lost" that showed up almost every time this panel opened.
+                // Wait for the loop to actually let go, and skip the query rather than write into
+                // a busy wire.
                 if (source != null) {
                     source.paused = true
-                    Thread.sleep(200)
+                    val idle = (source as? SdrEngine)?.awaitBusIdle(1500) ?: true
+                    if (!idle) {
+                        main.post { toast(getString(R.string.gpio_busy)) }
+                        return@Thread
+                    }
+                    d.drainInput()          // nothing should be buffered once the loop is idle
                 }
                 val states = LinkedHashMap(
                     d.gpioStates() ?: run {

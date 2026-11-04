@@ -416,6 +416,7 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
                 cmd(next.text)
             } catch (e: SdrError) {
                 next.onFail?.invoke(e)
+                drainInput()    // a reply that turns up late must not become the next header
             }
         }
     }
@@ -576,7 +577,14 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
         val count = n.coerceIn(256, maxSamples)
         val tenBit = bits >= 10
         write("CAP${if (tenBit) 20 else 16} $count $rateIdx\n")
-        val header = readLine(3000)
+        // A queued side command whose reply arrived late sits in front of our header. Skipping
+        // those lines keeps one slow LED/BEEP write from being read as a capture error.
+        var header = readLine(3000)
+        var skipped = 0
+        while (skipped < 3 && !header.startsWith("DATA") && isSideReply(header)) {
+            skipped++
+            header = readLine(3000)
+        }
         if (!header.startsWith("DATA")) throw SdrError("capture: $header")
         val parts = header.trim().split(Regex("\\s+"))
         if (parts.size < 3) throw SdrError("capture: bad header $header")
@@ -663,8 +671,13 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
         return out
     }
 
+    /** True for the acknowledgements a queued side command leaves behind (never an error line). */
+    private fun isSideReply(line: String): Boolean =
+        line.startsWith("OK") || line.startsWith("LED ") || line.startsWith("BEEP ") ||
+            line.startsWith("GPIO ")
+
     /** Drop whatever is buffered: a previous client may have died mid transfer. */
-    private fun drainInput() {
+    internal fun drainInput() {
         val c = conn ?: return
         val ep = epIn ?: return
         while (true) {
@@ -674,6 +687,26 @@ class Espsdr(private val usb: UsbManager, val device: UsbDevice) {
         rxPos = 0
         rxLen = 0
         lineBuf.reset()
+    }
+
+    /**
+     * Puts the link back in step after a garbled or timed-out command: throw away everything that
+     * arrived late, wake the firmware with an empty line and drop whatever that produced. Safe to
+     * call whenever no capture is in flight; the caller owns the timing.
+     */
+    fun resyncLink() {
+        drainInput()
+        try {
+            write("\n")
+        } catch (_: Throwable) {
+            return
+        }
+        try {
+            Thread.sleep(20)
+        } catch (_: InterruptedException) {
+        }
+        drainInput()
+        specActive = false          // the stream, if any, is gone with the empty line
     }
 
     private fun resync() {

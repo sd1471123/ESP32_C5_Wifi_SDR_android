@@ -114,6 +114,9 @@
     <string name="pause_icon">❚❚</string>
     <string name="resume_icon">▶</string>
     <string name="clear_icon">✕</string>
+    <string name="screen_icon">☀</string>
+    <string name="screen_on">屏幕常亮已开启</string>
+    <string name="screen_off">已恢复自动熄屏</string>
     <string name="agc">AGC</string>
     <string name="axis_floor">底</string>
     <string name="axis_span">跨度</string>
@@ -205,6 +208,7 @@
     <string name="beep_pattern_hint">例：响 300 / 空 200，每循环 3 次，轮间隔 2000 → 三声短促报警后静默两秒再重复。</string>
     <string name="beep_pattern_short">节拍 %1$d/%2$d ms ×%3$d，轮间隔 %4$d ms</string>
     <string name="gpio_open">Z/0/1</string>
+    <string name="gpio_busy">采集正忙，请稍后再试</string>
     <string name="gpio_none">板子不支持 GPIO</string>
     <string name="gpio_pins_count">%1$d 个可用引脚</string>
     <string name="gpio_pins_header">%1$d 个可用引脚 · %2$s</string>

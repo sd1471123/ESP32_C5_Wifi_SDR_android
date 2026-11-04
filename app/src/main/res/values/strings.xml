@@ -114,6 +114,9 @@
     <string name="pause_icon">❚❚</string>
     <string name="resume_icon">▶</string>
     <string name="clear_icon">✕</string>
+    <string name="screen_icon">☀</string>
+    <string name="screen_on">Screen stays on</string>
+    <string name="screen_off">Screen timeout restored</string>
     <string name="agc">AGC</string>
     <string name="axis_floor">Floor</string>
     <string name="axis_span">Range</string>
@@ -205,6 +208,7 @@
     <string name="beep_pattern_hint">e.g. 300 on / 200 off, 3 beeps per cycle, 2000 between cycles: three short beeps, then two seconds of silence.</string>
     <string name="beep_pattern_short">%1$d/%2$d ms ×%3$d, %4$d ms between cycles</string>
     <string name="gpio_open">Z/0/1</string>
+    <string name="gpio_busy">Capture is still busy — try again</string>
     <string name="gpio_none">Board does not expose GPIO</string>
     <string name="gpio_pins_count">%1$d spare pins</string>
     <string name="gpio_pins_header">%1$d spare pins · %2$s</string>

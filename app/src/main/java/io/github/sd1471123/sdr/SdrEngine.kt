@@ -1,6 +1,7 @@
 package io.github.sd1471123.sdr
 
 import android.content.Context
+import android.util.Log
 import java.io.IOException
 import kotlin.math.abs
 import kotlin.math.log10
@@ -56,6 +57,24 @@ class SdrEngine(
 
     @Volatile private var running = true
 
+    /** False while the loop owns the wire; a synchronous query has to wait for it to go true. */
+    @Volatile private var busIdle = true
+
+    /**
+     * Blocks until the loop sits between two steps and no chip stream is running, i.e. nothing
+     * will touch the wire until [paused] is cleared again. False when the loop did not let go in
+     * time: the caller must then leave the wire alone, because writing into a capture in flight
+     * is what garbles both replies.
+     */
+    fun awaitBusIdle(timeoutMs: Long): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            if (busIdle && !specUp) return true
+            Thread.sleep(5)
+        }
+        return busIdle && !specUp
+    }
+
     private var appliedFreq = Int.MIN_VALUE
     private var appliedGain = Int.MIN_VALUE
     private var appliedBw = Int.MIN_VALUE
@@ -76,20 +95,32 @@ class SdrEngine(
         var lastBand = band
         var frames = 0
         var t0 = System.currentTimeMillis()
-        try {
-            while (running) {
-                if (paused) {
-                    // Idle without touching the radio: the sweep state survives, so resuming
-                    // continues where it stopped instead of restarting the band.
+        var fails = 0
+        while (running) {
+            if (paused) {
+                // Idle without touching the radio: the sweep state survives, so resuming
+                // continues where it stopped instead of restarting the band.
+                // A chip stream keeps pushing frames while we idle, so stop it first: the UI
+                // cannot share the wire with a stream, and a stray SPC1 frame is exactly what
+                // used to garble a GPIO/LED query.
+                if (specUp) {
                     try {
-                        sleep(40)
-                    } catch (_: InterruptedException) {
-                        break
+                        dev.stopSpec()
+                    } catch (_: Throwable) {
                     }
-                    frames = 0
-                    t0 = System.currentTimeMillis()
-                    continue
+                    specUp = false
+                    specKey = ""                // the loop restarts the stream when it resumes
                 }
+                try {
+                    sleep(40)
+                } catch (_: InterruptedException) {
+                    break
+                }
+                frames = 0
+                t0 = System.currentTimeMillis()
+                continue
+            }
+            try {
                 if (mode != lastMode || band != lastBand) {
                     if (specUp) dev.stopSpec()     // the chip streams until told to stop
                     specUp = false
@@ -99,11 +130,20 @@ class SdrEngine(
                     lastBand = band
                     appliedFreq = Int.MIN_VALUE
                 }
-                val frame = if (lastMode == Mode.SWEEP) {
-                    val state = sweep ?: newSweep().also { sweep = it }
-                    sweepStep(state)
-                } else {
-                    liveStep()
+                // The wire belongs to the loop from its first command to its last read, so the
+                // window has to cover the whole step: a caller that writes mid-step corrupts
+                // both conversations.
+                busIdle = false
+                val frame: SdrFrame
+                try {
+                    frame = if (lastMode == Mode.SWEEP) {
+                        val state = sweep ?: newSweep().also { sweep = it }
+                        sweepStep(state)
+                    } else {
+                        liveStep()
+                    }
+                } finally {
+                    busIdle = true
                 }
                 frames++
                 val now = System.currentTimeMillis()
@@ -114,9 +154,36 @@ class SdrEngine(
                     t0 = now
                 }
                 listener.onFrame(frame)
+                fails = 0
+            } catch (t: Throwable) {
+                if (!running) return
+                // A single garbled reply must not end the session. A late side command or a
+                // stalled frame leaves the link one line out of step, and from then on every
+                // command reads its predecessor's reply until the capture times out. Re-sync the
+                // wire and try again; only repeated failures are a fault worth closing for.
+                if (t !is SdrError || ++fails >= MAX_STEP_FAILS) {
+                    listener.onError(t)
+                    return
+                }
+                Log.w(TAG, "step failed ($fails/$MAX_STEP_FAILS), resyncing", t)
+                if (specUp) {
+                    try {
+                        dev.stopSpec()
+                    } catch (_: Throwable) {
+                    }
+                    specUp = false
+                }
+                specKey = ""
+                try {
+                    dev.resyncLink()
+                } catch (_: Throwable) {
+                }
+                try {
+                    sleep(80)
+                } catch (_: InterruptedException) {
+                    return
+                }
             }
-        } catch (t: Throwable) {
-            if (running) listener.onError(t)
         }
     }
 
@@ -435,6 +502,11 @@ class SdrEngine(
 
         /** Shortest gap between two stream restarts made to deliver queued side commands (ms). */
         private const val SIDE_FLUSH_MS = 300L
+
+        /** Consecutive failed steps a link gets to recover from before the session is closed. */
+        private const val MAX_STEP_FAILS = 3
+
+        private const val TAG = "SdrEngine"
 
         private val SWEEP_WIN_MHZ = floatArrayOf(10f, 20f)
     }
